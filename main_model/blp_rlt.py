@@ -1,13 +1,50 @@
-#!/usr/bin/env python3.7
+'''
+Author: guo_idpc
+Date: 2023-02-23 16:57:57
+LastEditors: guo_idpc 867718012@qq.com
+LastEditTime: 2023-02-23 19:39:34
+FilePath: /bilinear/main_model/blp_rlt.py
+Description: 人一生会遇到约2920万人,两个人相爱的概率是0.000049,所以你不爱我,我不怪你.
 
-# Copyright 2021, Gurobi Optimization, LLC
+Copyright (c) 2023 by ${git_name_email}, All Rights Reserved. 
+'''
+'''
+                       ::
+                      :;J7, :,                        ::;7:
+                      ,ivYi, ,                       ;LLLFS:
+                      :iv7Yi                       :7ri;j5PL
+                     ,:ivYLvr                    ,ivrrirrY2X,
+                     :;r@Wwz.7r:                :ivu@kexianli.
+                    :iL7::,:::iiirii:ii;::::,,irvF7rvvLujL7ur
+                   ri::,:,::i:iiiiiii:i:irrv177JX7rYXqZEkvv17
+                ;i:, , ::::iirrririi:i:::iiir2XXvii;L8OGJr71i
+              :,, ,,:   ,::ir@mingyi.irii:i:::j1jri7ZBOS7ivv,
+                 ,::,    ::rv77iiiriii:iii:i::,rvLq@huhao.Li
+             ,,      ,, ,:ir7ir::,:::i;ir:::i:i::rSGGYri712:
+           :::  ,v7r:: ::rrv77:, ,, ,:i7rrii:::::, ir7ri7Lri
+          ,     2OBBOi,iiir;r::        ,irriiii::,, ,iv7Luur:
+        ,,     i78MBBi,:,:::,:,  :7FSL: ,iriii:::i::,,:rLqXv::
+        :      iuMMP: :,:::,:ii;2GY7OBB0viiii:i:iii:i:::iJqL;::
+       ,     ::::i   ,,,,, ::LuBBu BBBBBErii:i:i:i:i:i:i:r77ii
+      ,       :       , ,,:::rruBZ1MBBqi, :,,,:::,::::::iiriri:
+     ,               ,,,,::::i:  @arqiao.       ,:,, ,:::ii;i7:
+    :,       rjujLYLi   ,,:::::,:::::::::,,   ,:i,:,,,,,::i:iii
+    ::      BBBBBBBBB0,    ,,::: , ,:::::: ,      ,,,, ,,:::::::
+    i,  ,  ,8BMMBBBBBBi     ,,:,,     ,,, , ,   , , , :,::ii::i::
+    :      iZMOMOMBBM2::::::::::,,,,     ,,,,,,:,,,::::i:irr:i:::,
+    i   ,,:;u0MBMOG1L:::i::::::  ,,,::,   ,,, ::::::i:i:iirii:i:i:
+    :    ,iuUuuXUkFu7i:iii:i:::, :,:,: ::::::::i:i:::::iirr7iiri::
+    :     :rk@Yizero.i:::::, ,:ii:::::::i:::::i::,::::iirrriiiri::,
+     :      5BMBBBBBBSr:,::rv2kuii:::iii::,:i:,, , ,,:,:i@petermu.,
+          , :r50EZ8MBBBBGOBBBZP7::::i::,:::::,: :,:,::i;rrririiii::
+              :jujYY7LS0ujJL7r::,::i::,::::::::::::::iirirrrrrrr:ii:
+           ,:  :@kevensun.:,:,,,::::i:i:::::,,::::::iir;ii;7v77;ii;i,
+           ,,,     ,,:,::::::i:iiiii:i::::,, ::::iiiir@xingjief.r;7:i,
+        , , ,,,:,,::::::::iiiiiiiiii:,:,:::::::::iiir;ri7vL77rrirri::
+         :,, , ::::::::i:::i:::i:i::,,,,,:,::i:i:::iir;@Secbone.ii:::
+'''
 
-# This example formulates and solves the following simple bilinear model:
-#  maximize    x
-#  subject to  x + y + z <= 10
-#              x * y <= 2         (bilinear inequality)
-#              x * z + y * z = 1  (bilinear equality)
-#              x, y, z non-negative (x integral in second version)
+
 import copy
 import gurobipy as gp
 from gurobipy import GRB
@@ -195,6 +232,10 @@ def piece_McCormick(model,H,x,y,x1,x2,y1,y2,c,x_pieces,y_pieces,piece_count,erro
     piece_count+=1
     return model,piece_count,0
 def fix_solve(m_ht,m_fc):
+    '''
+    description: 最后一步求解
+    return {*}
+    '''    
     m = gp.Model("bilinear")
 
     z_fc = [m.addVar(lb=0, ub=1, vtype=GRB.BINARY, name=f"z_fc{t}") for t in range(period)]
@@ -738,80 +779,3 @@ def bound_con(H,gap,m_ht_1,m_ht_2,t_ht_1,t_ht_2,m_fc_1,m_fc_2,t_fc_1,t_fc_2,
 # result.write(1,6+len(item1)+len(item2),opex)
 # wb.save("sol_season_12day_1109.xls")
 # #print(m.getJSONSolution())
-
-
-if __name__ == '__main__':
-    m_ht_1,m_ht_2 = 10000,100000
-    t_ht_1 = [50 for _ in range(period)]
-    t_ht_2 = [80 for _ in range(period)]
-    m_fc_1,m_fc_2 = 1000,10000
-    t_fc_1 = [50 for _ in range(period)]
-    t_fc_2 = [80 for _ in range(period)]
-    #m_el_1,m_el_2 =10000,100000
-    #t_el_1 = [50 for _ in range(period+1)]
-    #t_el_2 = [80 for _ in range(period+1)]
-    n=1
-    gap = ggggap
-    obj = 100000000000
-    max_err=[]
-    mean_err=[]
-    slack_num_list=[]
-    error = [1 for _ in range(period*nn*3)]
-    obj,m_ht_1,m_ht_2,t_ht_1,t_ht_2,m_fc_1,m_fc_2,t_fc_1,t_fc_2,H,error,res,slack_num = opt(obj,m_ht_1,m_ht_2,t_ht_1,t_ht_2,m_fc_1,m_fc_2,t_fc_1,t_fc_2,error)
-    m_ht_1,m_ht_2,t_ht_1,t_ht_2,m_fc_1,m_fc_2,t_fc_1,t_fc_2 = bound_con(H,gap,m_ht_1,m_ht_2,t_ht_1,t_ht_2,m_fc_1,m_fc_2,t_fc_1,t_fc_2,
-        res['m_ht'],res['m_fc'],res['t_ht'],res['t_fc'],n,0.9)
-    error = [abs(error[i])for i in range(len(error))]
-    max_err.append(max(error))
-    mean_err.append(np.mean(error))
-    slack_num_list.append(slack_num)
-    print(max(error))
-    print(min(error))
-    #exit(0)
-    #all(error[i]>=0.005 for i in range(len(error)))
-    start =time.time()
-    obj_print=[]
-    while max(error)>gap or min(error)<-gap:
-        obj,m_ht_1,m_ht_2,t_ht_1,t_ht_2,m_fc_1,m_fc_2,t_fc_1,t_fc_2,H,error,res_new,slack_num = opt(obj,m_ht_1,m_ht_2,t_ht_1,t_ht_2,m_fc_1,m_fc_2,t_fc_1,t_fc_2,error)
-        if obj == 404:
-            break
-        res = res_new
-        m_ht_1,m_ht_2,t_ht_1,t_ht_2,m_fc_1,m_fc_2,t_fc_1,t_fc_2 = bound_con(H,gap,m_ht_1,m_ht_2,t_ht_1,t_ht_2,m_fc_1,m_fc_2,t_fc_1,t_fc_2,
-            res['m_ht'],res['m_fc'],res['t_ht'],res['t_fc'],n,0.9)
-        #print(t_el_1,t_el_2)
-        obj_print.append(res['objective'])
-        error = [abs(error[i])for i in range(len(error))]
-        max_err.append(max(error))
-        mean_err.append(np.mean(error))
-        slack_num_list.append(slack_num)
-        print(max_err)
-        print(mean_err)
-        print(slack_num_list)
-        n += 1
-    print(n)
-    print(obj_print)
-    print('------')
-
-
-    #计算一次fix后的可行解
-    #res = fix_solve(res['m_ht'],res['m_fc'])
-    items = list(res.keys())
-    wb = xlwt.Workbook()
-    total = wb.add_sheet('test')
-    for i in range(len(items)):
-        total.write(0,i,items[i])
-        if type(res[items[i]]) == list:
-            sum = 0
-            print(items[i])
-            for j in range(len(res[items[i]])):
-                total.write(j+2,i,(res[items[i]])[j])
-                # sum += (res[items[i]])[j]
-            # total.write(1,i,sum)
-        else:
-            total.write(1,i,res[items[i]])
-    print(max_err)
-    print(mean_err)
-    print(slack_num_list)
-    filename = 'res/McCormick1' + '.xls'
-    wb.save(filename)
-    end=time.time()
-    print('Running time: %s Seconds'%(end-start))
