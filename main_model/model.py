@@ -2,7 +2,7 @@
 Author: guo_idpc
 Date: 2023-02-23 19:15:43
 LastEditors: guo_idpc 867718012@qq.com
-LastEditTime: 2023-02-24 11:33:47
+LastEditTime: 2023-02-24 22:56:49
 FilePath: /bilinear/main_model/model.py
 Description: 人一生会遇到约2920万人,两个人相爱的概率是0.000049,所以你不爱我,我不怪你.
 
@@ -55,339 +55,420 @@ import random
 import time
 import xlrd
 import csv
-
+import pandas as pd
 from method import piece_McCormick
 
-def crf(year):
-    i = 0.08
-    crf=((1+i)**year)*i/((1+i)**year-1);
-    return crf
+from model_load import *
 
 
-cer=0.5
-days=4
-nn=2
-ggggap=0.01
 
-book_spr = xlrd.open_workbook('data/cspringdata.xlsx')
-book_sum = xlrd.open_workbook('data/csummerdata.xlsx')
-book_aut = xlrd.open_workbook('data/cautumndata.xlsx')
-book_win = xlrd.open_workbook('data/cwinterdata.xlsx')
-data_spr = book_spr.sheet_by_index(0)
-data_sum = book_sum.sheet_by_index(0)
-data_aut = book_aut.sheet_by_index(0)
-data_win = book_win.sheet_by_index(0)
-ele_load = []
-g_demand = []
-q_demand = []
-r_solar = []
+def opt(M,T,error,fix,res_M_T,H):
+    '''
+    description: 优化主函数，构造物理模型
+    return {*}
+    '''
+    # 系数
+    k_fc = 16
+    k_el = 55
+    k_pv = 0.16
+    k_hp = 3.4
+    k_ghp_g = 4
+    k_ghp_q = 5
+    eta_fc = 0.9
+    k_pump = 0.6/1000
 
 
-c = 4200 # J/kg*C
-c_kWh = 4200/3.6/1000000
-delta_T = 12
-k_pv = 0.16
-lambda_h = 20
-#------------
-cost_fc = 15504
-cost_el = 9627.3
-cost_hst = 3600
-cost_eb = 434.21
-cost_water_hot = 1
-cost_pv = 900
-cost_pump = 730
-crf_fc = crf(10)
-crf_el = crf(7)
-crf_hst = crf(20)
-crf_water = crf(20)
-crf_pv = crf(20)
-crf_pump = crf(20)
-crf_eb = crf(15)
-k_fc = 18
-k_el = 0.022
-k_el_1 = 46
-k_co = 1.05
-k_pv = 0.16
-#--------------
-lambda_ele_in = [0.3748,0.3748,0.3748,0.3748,0.3748,0.3748,0.3748,0.8745,0.8745,0.8745,1.4002,1.4002,1.4002,1.4002,
-                1.4002,0.8745,0.8745,0.8745,1.4002,1.4002,1.4002,0.8745,0.8745,0.3748]
-#lambda_ele_in = [lambda_ele_in[i]*1.5 for i in range(len(lambda_ele_in))]
-lambda_ele_out = 0.3
-#lambda_ele_in = lambda_ele_in*30
+    t_ht_min = 40
+    t_fc_max = 65
+    c = 4200 # J/kg*C
+    c_kWh = 4200/3.6/1000000
+    delta_T = 12
+    lambda_h = 20
 
+    # 输入的一些初始化
+    # m_ht_1,m_ht_2   = M["m_ht"][0], M["m_ht"][1]
+    m_fc_1,m_fc_2   = M["m_fc"][0], M["m_fc"][1]
+    # m_cdu_1,m_cdu_2 = M["m_cdu"][0], M["m_cdu"][1]
+    # m_he_1,m_he_2   = M["m_he"][0], M["m_he"][1]
+    t_ht_1,t_ht_2   = T['t_ht'][0] ,T['t_ht'][1]
+    t_fc_1,t_fc_2   = T['t_fc'][0] ,T['t_fc'][1]
+    # t_cdu_1,t_cdu_2 = T['t_cdu'][0],T['t_cdu'][1]
+    # t_he_1,t_he_2   = T['t_he'][0] ,T['t_he'][1]
+    period = len(g_demand)
+    # 固定设备容量
+    area_pv = 2000#m.addVar(vtype=GRB.CONTINUOUS, lb=0, ub = 2000, name=f"area_pv")
+    hst = 2000#m.addVar(vtype=GRB.CONTINUOUS, lb=0, ub = 2000, name=f"hst")
 
-with open('CHN_Shaanxi.Xian.570360_CSWD.csv') as csvfile:
-    reader = csv.DictReader(csvfile)
-    for row in reader:
-        ele_load.append(float(row['Electricity Load [kwh]']))
-        q_demand.append(float(row['Cooling Load [kwh]']))
-        g_demand.append(float(row['Heating Load [kwh]']))
-        r_solar.append(float(row['Environment:Site Direct Solar Radiation Rate per Area [W/m2](Hourly)']))
-q_demand = [0 if num == '' else num for num in q_demand]
-g_demand = [0 if num == '' else num for num in g_demand]
-#m_demand = [0 if num == '' else num for num in m_demand]
-ele_load = [0 if num == '' else num for num in ele_load]
-
-if days == 4:
-    q_demand = q_demand[384+24:384+48]+q_demand[2496:2496+24]+q_demand[4680:4680+24]+q_demand[6888:6888+24]
-    g_demand = g_demand[384+24:384+48]+g_demand[2496:2496+24]+g_demand[4680:4680+24]+g_demand[6888:6888+24]
-    r_solar =   r_solar[384+24:384+48]+r_solar[2496:2496+24]+r_solar[4680:4680+24]+r_solar[6888:6888+24]
-    ele_load = ele_load[384+24:384+48]+ele_load[2496:2496+24]+ele_load[4680:4680+24]+ele_load[6888:6888+24]
-
-elif days == 7:
-    q_demand = q_demand[24:8*24]
-    g_demand = g_demand[24:8*24]
-    r_solar =   r_solar[24:8*24]
-    ele_load = ele_load[24:8*24]
-else:
-    g_demand = g_demand[384+24:384+48]+g_demand[1080+24:1080+48]+g_demand[1752:1752+24]+g_demand[2496+48:2496+72]+g_demand[3216:3216+24]+g_demand[3960:3960+24]+g_demand[4680+48:4680+72]+g_demand[5424:5424+24]+g_demand[6168:6168+24]+g_demand[6888+24:6888+48]+g_demand[7632:7632+24]+g_demand[8352:8352+24]
-    q_demand = q_demand[384+24:384+48]+q_demand[1080+24:1080+48]+q_demand[1752:1752+24]+q_demand[2496+48:2496+72]+q_demand[3216:3216+24]+q_demand[3960:3960+24]+q_demand[4680+48:4680+72]+q_demand[5424:5424+24]+q_demand[6168:6168+24]+q_demand[6888+24:6888+48]+q_demand[7632:7632+24]+q_demand[8352:8352+24]
-    r_solar =   r_solar[384+24:384+48]+r_solar[1080+24:1080+48]+r_solar[1752:1752+24]+r_solar[2496+48:2496+72]+r_solar[3216:3216+24]+r_solar[3960:3960+24]+r_solar[4680+48:4680+72]+r_solar[5424:5424+24]+r_solar[6168:6168+24]+r_solar[6888+24:6888+48]+r_solar[7632:7632+24]+r_solar[8352:8352+24]
-    ele_load = ele_load[384+24:384+48]+ele_load[1080+24:1080+48]+ele_load[1752:1752+24]+ele_load[2496+48:2496+72]+ele_load[3216:3216+24]+ele_load[3960:3960+24]+ele_load[4680+48:4680+72]+ele_load[5424:5424+24]+ele_load[6168:6168+24]+ele_load[6888+24:6888+48]+ele_load[7632:7632+24]+ele_load[8352:8352+24]
-
-g_de = [g_demand[i]*3 for i in range(len(ele_load))]
-r=r_solar
-p_load = [ele_load[i]+q_demand[i] for i in range(len(ele_load))]
-
-import matplotlib.pyplot as plt
-x = [i for i in range(0,24*6)]
-plt.plot(x,g_de)
-plt.show()
-exit(0)
-
-#g_de = g_de_w*days
-#p_load = p_load_winter*days
-lambda_ele_in = lambda_ele_in*days*4
-#r = r*days
-m_de = [g_de[i]/c_kWh/delta_T for i in range(len(g_de))]
-period = len(g_de)
-# x1_list=[]
-# x2_list=[]
-# y1_list=[]
-# y2_list=[]
-# c=[]
-# x_pieces=[]
-# y_pieces=[]
-
-def opt(obj,m_ht_1,m_ht_2,t_ht_1,t_ht_2,m_fc_1,m_fc_2,t_fc_1,t_fc_2,error):
-
-    # Create a new model
+    m_ht = 500#m.addVar(vtype=GRB.CONTINUOUS, lb=m_ht_1,ub=m_ht_2, name="m_ht") # capacity of hot water tank
+    m_ct = 500
+    fc_max = 500
+    el_max = 500
+    hp_max = 500
+    ghp_max = 500
+    pump_max = 10000
+    # Create a new model    
     m = gp.Model("bilinear")
-    
-    m_ht = m.addVar(vtype=GRB.CONTINUOUS, lb=m_ht_1,ub=m_ht_2, name="m_ht") # capacity of hot water tank
+
+
+    opex = m.addVar(vtype=GRB.CONTINUOUS, lb=0, name="opex")
+    t_ct = [m.addVar(vtype=GRB.CONTINUOUS, lb=4,ub=20, name=f"t_ct{t}") for t in range(period)] # temperature of cold water tank
     t_ht = [m.addVar(vtype=GRB.CONTINUOUS, lb=t_ht_1[t],ub=t_ht_2[t], name=f"t_ht{t}") for t in range(period)] # temperature of hot water tank
-    m_fc = m.addVar(vtype=GRB.CONTINUOUS, lb=m_fc_1,ub=m_fc_2, name=f"m_fc") # fuel cells water
+    m_fc = [m.addVar(vtype=GRB.CONTINUOUS, lb=m_fc_1[t],ub=m_fc_2[t], name=f"m_fc{t}") for t in range(period)] # fuel cells water
     t_fc = [m.addVar(vtype=GRB.CONTINUOUS, lb=t_fc_1[t],ub=t_fc_2[t], name=f"t_fc{t}") for t in range(period)] # outlet temperature of fuel cells cooling circuits
+
     #m_el = m.addVar(vtype=GRB.CONTINUOUS, lb=m_el_1,ub=m_el_2, name=f"m_el") # fuel cells water
     #t_el = [m.addVar(vtype=GRB.CONTINUOUS, lb=t_el_1[t],ub=t_el_2[t], name=f"t_el{t}") for t in range(period)] # outlet temperature of electrolyzer cooling circuits
-
-    H_ht_ht = [m.addVar(vtype=GRB.CONTINUOUS,lb=0, name=f"H_ht_ht{t}") for t in range(period)]
+    
+    # H_ht_ht = [m.addVar(vtype=GRB.CONTINUOUS,lb=0, name=f"H_ht_ht{t}") for t in range(period)]
     H_fc_fc = [m.addVar(vtype=GRB.CONTINUOUS,lb=0, name=f"H_fc_fc{t}") for t in range(period)]
     H_fc_ht = [m.addVar(vtype=GRB.CONTINUOUS,lb=0, name=f"H_fc_ht{t}") for t in range(period)]
-    H_el_el = [m.addVar(vtype=GRB.CONTINUOUS,lb=0, name=f"H_el_el{t}") for t in range(period)]
-    H_el_ht = [m.addVar(vtype=GRB.CONTINUOUS,lb=0, name=f"H_el_ht{t}") for t in range(period)]
+    # H_el_el = [m.addVar(vtype=GRB.CONTINUOUS,lb=0, name=f"H_el_el{t}") for t in range(period)]
+    # H_el_ht = [m.addVar(vtype=GRB.CONTINUOUS,lb=0, name=f"H_el_ht{t}") for t in range(period)]
 
 
-    z_fc = [m.addVar(lb=0, ub=1, vtype=GRB.BINARY, name=f"z_fc{t}") for t in range(period)]
-    z_el = [m.addVar(lb=0, ub=1, vtype=GRB.BINARY, name=f"z_el{t}") for t in range(period)]
+    z_ghpg = [m.addVar(lb=0, ub=1, vtype=GRB.BINARY, name=f"z_ghpg{t}") for t in range(period)]
+    z_ghpq = [m.addVar(lb=0, ub=1, vtype=GRB.BINARY, name=f"z_ghpq{t}") for t in range(period)]
+    p_ghp = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_ghp{t}") for t in range(period)] # ground source heat pump
+    g_ghp = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_ghp{t}") for t in range(period)] # ground source heat pump
+    q_ghp = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"q_ghp{t}") for t in range(period)] # ground source heat pump
+
+    p_hp = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_hp{t}") for t in range(period)] # waste heat pump
+    g_hp = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_hp{t}") for t in range(period)] # waste heat pump
+    q_hp = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"q_hp{t}") for t in range(period)] # waste heat pump
+
+
     #z_ele_in = [m.addVar(lb=-0.0001, ub=1.01, vtype=GRB.BINARY, name=f"z_ele_in{t}") for t in range(period)]
 
     #z_ele_out = [m.addVar(lb=-0.0001, ub=1.01, vtype=GRB.BINARY, name=f"z_ele_out{t}") for t in range(period)]
     # Create variables
-    ce_h = m.addVar(vtype=GRB.CONTINUOUS, lb=0, name="ce_h")
+    # ce_h = m.addVar(vtype=GRB.CONTINUOUS, lb=0, name="ce_h")
     g_fc = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_fc{t}") for t in range(period)] # heat generated by fuel cells
     p_fc = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_fc{t}") for t in range(period)]
-    fc_max = m.addVar(vtype=GRB.CONTINUOUS, lb=0, name="fc_max") # rated heat power of fuel cells
-    pump_max = m.addVar(vtype=GRB.CONTINUOUS, lb=0, name="pump_max")
-    el_max = m.addVar(vtype=GRB.CONTINUOUS, lb=0, name="el_max") # rated heat power of fuel cells
-    p_eb_max = m.addVar(vtype=GRB.CONTINUOUS, lb=0, name="p_eb_max")
-
-    t_de = [m.addVar(vtype=GRB.CONTINUOUS, lb=0,name=f"t_de{t}") for t in range(period)] # outlet temparature of heat supply circuits
     h_fc = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"h_fc{t}") for t in range(period)] # hydrogen used in fuel cells
-    p_eb = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_eb{t}") for t in range(period)]
-    g_eb = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_eb{t}") for t in range(period)]
-    g_el = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_el{t}") for t in range(period)] # heat generated by Electrolyzer
+
+
+    # t_de = [m.addVar(vtype=GRB.CONTINUOUS, lb=0,name=f"t_de{t}") for t in range(period)] # outlet temparature of heat supply circuits
+    # p_eb = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_eb{t}") for t in range(period)]
+    # g_eb = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_eb{t}") for t in range(period)]
+    # g_el = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_el{t}") for t in range(period)] # heat generated by Electrolyzer
     h_el = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"h_el{t}") for t in range(period)] # hydrogen generated by electrolyzer
     p_el = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_el{t}") for t in range(period)] # power consumption by electrolyzer
     h_sto = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"h_sto{t}") for t in range(period)] # hydrogen storage
     h_pur = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"h_pur{t}") for t in range(period)] # hydrogen purchase
-    p_pur = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_pur{t}") for t in range(period)] # power purchase
-    p_sol = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_sol{t}") for t in range(period)] # power purchase
-    area_pv = m.addVar(vtype=GRB.CONTINUOUS, lb=0, ub = 2000, name=f"area_pv")
-    p_pump = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_pump{t}") for t in range(period)] 
-    hst = m.addVar(vtype=GRB.CONTINUOUS, lb=0, ub = 2000, name=f"hst")
-    p_co = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_co{t}") for t in range(period)] 
 
-    piece_count = period*nn*3#-int(period/24-1)*2*nn
-    #McCormick constrian
-    c = [m.addVar(vtype=GRB.BINARY, lb=0,ub=1, name=f"c_x{t}") for t in range(piece_count)]
-    #c_y = [m.addVar(vtype=GRB.BINARY, lb=0, name=f"c_y{t}") for t in range(piece_count,piece_count+n)]
-    x_pieces = [m.addVar(vtype=GRB.CONTINUOUS, name=f"x_pieces{t}") for t in range(piece_count)]
-    y_pieces = [m.addVar(vtype=GRB.CONTINUOUS, name=f"y_pieces{t}") for t in range(piece_count)]
-    piece_count=0
-    slack_num=0
-    for i in range(period):
-        #print(nn)
-        m,piece_count,int_tmp = piece_McCormick(m,H_fc_fc[i],m_fc,t_fc[i],m_fc_1,m_fc_2,t_fc_1[i],t_fc_2[i],c,x_pieces,y_pieces, piece_count,error,i,nn)
-        slack_num+=int_tmp
-        #print(i%24)
-        #if i%24!=0 or i==0:
-        m,piece_count,int_tmp = piece_McCormick(m,H_fc_ht[i],m_fc,t_ht[i],m_fc_1,m_fc_2,t_ht_1[i],t_ht_2[i],c,x_pieces,y_pieces,piece_count,error,i,nn)
-        slack_num+=int_tmp
-        m,piece_count,int_tmp = piece_McCormick(m,H_ht_ht[i],m_ht,t_ht[i],m_ht_1,m_ht_2,t_ht_1[i],t_ht_2[i],c,x_pieces,y_pieces,piece_count,error,i,nn)
-        slack_num+=int_tmp
-        #print(piece_count)
+    
+    p_pur = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_pur{t}") for t in range(period)] # power purchase
+    p_sol = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_sol{t}") for t in range(period)] # power purchase 
+    p_pump = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_pump{t}") for t in range(period)] # 用于刻画燃料电池换水的电能消耗
+
+    # p_co = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_co{t}") for t in range(period)] 
+
     for i in range(int(period/24)-1):
         m.addConstr(t_ht[i*24+24] == t_ht[24*i])
-        m.addConstr(H_ht_ht[i*24+24] == H_ht_ht[24*i])
-        m.addConstr(H_fc_ht[i*24+24] == H_fc_ht[24*i])
+        m.addConstr(t_ct[i*24+24] == t_ct[24*i])
+    # m.addConstr(t_ht[-1] == t_ht[0])
+    # m.addConstr(h_sto[-1] == h_sto[0])
 
-        #m.addConstr(H_el_ht[i*24+24] == H_el_ht[24*i])
-    m.addConstr(H_ht_ht[-1] == H_ht_ht[0])
-    m.addConstr(H_fc_ht[-1] == H_fc_ht[0])
-    m.addConstr(t_ht[-1] == t_ht[0])
-    #m.addConstr(h_sto[0] == 0)
-    m.addConstr(h_sto[-1] == h_sto[0])
+
     for i in range(period - 1):
-        # m.addConstr(m_ht * (t_ht[i + 1] - t_ht[i]) == 
-        #     m_fc * (t_fc[i] - t_ht[i]) + m_el * (t_el[i] - t_ht[i]) - m_de[i] * (t_ht[i] - t_de[i]))
-        m.addConstr(H_ht_ht[i+1]-H_ht_ht[i] == H_fc_fc[i]-H_fc_ht[i] + g_eb[i]/c_kWh -m_de[i] * (t_ht[i] - t_de[i]))
+        ###m.addConstr(m_ht * (t_ht[i + 1] - t_ht[i]) == m_fc * (t_cdu[i] - t_ht[i]) + m_cdu * (t_cdu[i] - t_ht[i]) - q_ct[i]/c_kWh- g_sol[i]/c_kWh )
+        # m.addConstr(H_ht_ht[i+1]-H_ht_ht[i] == H_fc_cdu[i] - H_fc_ht[i]+H_cdu_cdu[i] - H_cdu_ht[i]-q_ct[i]/c_kWh- g_sol[i]/c_kWh)        
+        m.addConstr(c_kWh*m_ht(t_ht[i+1] - t_ht[i]) + g_hp[i] + g_fc[i] + g_ghp[i]== g_demand[i] + water_load[i])
+        m.addConstr(q_hp[i] + q_ghp[i]== c_kWh*m_ct(t_ct[i+1] - t_ct[i]) + q_demand[i])
         m.addConstr(h_sto[i+1] - h_sto[i] == h_pur[i] + h_el[i] - h_fc[i])
         
-    #m.addConstr(m_ht * (t_ht[0] - t_ht[i]) == m_fc * (t_fc[i] - t_ht[i]) + m_el * (t_el[i] - t_ht[i]) - m_de[i] * (t_ht[i] - t_de[i]))
-    m.addConstr(H_ht_ht[0] - H_ht_ht[i] == H_fc_fc[i]-H_fc_ht[i] + g_eb[i]/c_kWh -m_de[i]*(t_ht[i]-t_de[i]))
+    #m.addConstr(m_ht * (t_ht[0] - t_ht[-1]) == m_fc * (t_cdu[-1] - t_ht[-1]) + m_cdu * (t_cdu[-1] - t_ht[-1]) - q_ct[-1]/c_kWh- g_sol[-1]/c_kWh)
+    # m.addConstr(H_ht_ht[0]-H_ht_ht[-1] == H_fc_cdu[-1] - H_fc_ht[-1]+H_cdu_cdu[-1] - H_cdu_ht[-1]-q_ct[-1]/c_kWh- g_sol[-1]/c_kWh)
+    #m.addConstr(m_wwt * (t_wwt[0] - t_wwt[i]) == m_cdu* (t_cdu[i] - t_wwt[i]) - q_ct[i]/c_kWh + m_he * (t_he[i] - t_cdu[i]))
+    #m.addConstr(m_ht * (t_ht[0] - t_ht[i]) == m_fc * (t_fc[i] - t_ht[i]) + g_eb[i]/c_kWh + m_el * (t_el[i] - t_ht[i]) - m_de[i] * (t_ht[i] - t_de[i]))
+    m.addConstr(c_kWh*m_ht(t_ht[0] - t_ht[-1]) + g_hp[-1] + g_fc[-1] + g_ghp[-1]== g_demand[-1] + water_load[-1])
+    m.addConstr(q_hp[-1] + q_ghp[-1]== c_kWh*m_ct(t_ct[0] - t_ct[-1]) + q_demand[-1])
     m.addConstr(h_sto[0] - h_sto[-1] == h_pur[-1] + h_el[-1] - h_fc[-1])
     #m.addConstr(t_ht[0] == 60)
-    m.addConstr(p_eb_max<=500)
-    for i in range(period):
-        #不能用经验公式，因为跟负荷有关，相当于还是使用了商业求解器的部分结果。
-        #m.addConstr(m_fc<= 80*g_fc[i])
-        #m.addConstr(m_fc>= 60*g_fc[i])
-        #m.addConstr(m_el<= 80*g_el[i])
-        #m.addConstr(m_el>= 60*g_el[i])
+    piece_count=0
+    slack_num=0
+    #piece_McCormick(model,H,x,y,x1,x2,y1,y2,piece_count,error,i_number,H_name,n)
+    if fix == 0:
+        for i in range(period):
+            #print(H_fc_fc[i],m_fc,t_fc[i],m_fc_1,m_fc_2,t_fc_1[i],t_fc_2[i])
+            m,piece_count,int_tmp = piece_McCormick(m,H_fc_fc[i],m_fc,t_fc[i],m_fc_1,m_fc_2,t_fc_1[i],t_fc_2[i],piece_count,error,i,"H_fc_fc",nn)
+            slack_num+=int_tmp
 
-        m.addConstr(10000*z_fc[i]>=g_fc[i])
-        #m.addConstr(z_fc[i]+g_fc[i]>=0.01)
-        m.addConstr(10000*z_el[i]>=p_el[i])
-        #m.addConstr(z_el[i]+g_el[i]>=0.01)
-        #m.addConstr(p_pur[i]<=z_ele_in[i]*1000000)
-        #m.addConstr(p_sol[i]<=z_ele_out[i]*1000000)
-        #m.addConstr(z_ele_in[i]+z_ele_out[i]<=1)
-        m.addConstr(t_de[i] >= 40)
-        m.addConstr(p_co[i] + p_el[i] + p_sol[i] + p_pump[i] + p_load[i] + p_eb[i]== p_pur[i] + p_fc[i] + k_pv*area_pv*r[i])
-        m.addConstr(g_fc[i] <= 0.9*18 * h_fc[i])
-        m.addConstr(p_pump[i] >= 0.6/1000 * (m_fc*z_fc[i]+m_de[i]))#热需求虽然低，水泵耗电高。
-        m.addConstr(p_co[i] >= k_co * h_el[i])
-        m.addConstr(p_fc[i] <= 18 * h_fc[i])#氢燃烧产电
-        m.addConstr(h_el[i] <= k_el * p_el[i])
-        #m.addConstr(g_el[i] <= 0.2017*p_el[i])
-        #m.addConstr(g_fc[i] == c_kWh * m_fc * (t_fc[i] - t_ht[i]))
-        #m.addConstr(g_el[i] == c_kWh * m_el * (t_el[i] - t_ht[i]))
-        m.addConstr(g_fc[i] == c_kWh * (H_fc_fc[i] - H_fc_ht[i]))
-        #m.addConstr(g_el[i] == c_kWh * (H_el_el[i] - H_el_ht[i]))
-        m.addConstr(t_fc[i] <= 80)
+            m,piece_count,int_tmp = piece_McCormick(m,H_fc_ht[i],m_fc,t_ht[i],m_fc_1,m_fc_2,t_ht_1[i],t_ht_2[i],  piece_count,error,i, "H_fc_ht",  nn)
+            slack_num+=int_tmp  
+            # m,piece_count,int_tmp = piece_McCormick(m,H_ht_ht[i],m_ht,t_ht[i],m_ht_1,m_ht_2,t_ht_1[i],t_ht_2[i],  piece_count,error,i, "H_ht_ht",  nn)
+            # slack_num+=int_tmp  
+            # m,piece_count,int_tmp = piece_McCormick(m,H_fc_cdu[i],m_fc,t_cdu[i],m_fc_1,m_fc_2,t_cdu_1[i],t_cdu_2[i], piece_count,error,i, "H_fc_cdu", nn)
+            # slack_num+=int_tmp
+            # m,piece_count,int_tmp = piece_McCormick(m,H_cdu_cdu[i],m_cdu,t_cdu[i],m_cdu_1,m_cdu_2,t_cdu_1[i],t_cdu_2[i],piece_count,error,i, "H_cdu_cdu", nn)
+            # slack_num+=int_tmp
+            # m,piece_count,int_tmp = piece_McCormick(m,H_cdu_ht[i],m_cdu,t_ht[i],m_cdu_1,m_cdu_2,t_ht_1[i],t_ht_2[i], piece_count,error,i,"H_cdu_ht",  nn)
+            # slack_num+=int_tmp
+            # m,piece_count,int_tmp = piece_McCormick(m,H_he_he[i],m_he,t_he[i],m_he_1,m_he_2,t_he_1[i],t_he_2[i],  piece_count,error,i,"H_he_he",   nn)
+            # slack_num+=int_tmp
+            # m,piece_count,int_tmp = piece_McCormick(m,H_he_cdu[i],m_he,t_cdu[i],m_he_1,m_he_2,t_cdu_1[i],t_cdu_2[i], piece_count,error,i,"H_he_cdu",  nn)
+            # slack_num+=int_tmp
+            # m,piece_count,int_tmp = piece_McCormick(m,H_ct_cdu[i],m_ct,t_cdu[i],m_ct_1,m_ct_2,t_cdu_1[i],t_cdu_2[i], piece_count,error,i, "H_ct_cdu", nn)
+            # slack_num+=int_tmp
+            # m,piece_count,int_tmp = piece_McCormick(m,H_ct_ct[i],m_ct,t_ct[i],m_ct_1,m_ct_2,t_ct_1[i],t_ct_2[i],  piece_count,error,i, "H_ct_ct",  nn)
+            # slack_num+=int_tmp
+        #print(piece_count)
+    elif fix == 1:
+        # m.addConstr(m_cdu == res_M_T['m_cdu'])
+        # m.addConstr(m_he == res_M_T['m_he'])
+        m.addConstr(m_fc == res_M_T['m_fc'])
+        # m.addConstr(m_ht == res_M_T['m_ht'])
+        # m.addConstr(m_ct == res_M_T['m_ct'])
+        for i in range(period):
+            #print(H_fc_fc[i],m_fc,t_fc[i],m_fc_1,m_fc_2,t_fc_1[i],t_fc_2[i])
+            #m,piece_count,int_tmp = piece_McCormick(m,H_fc_fc[i],m_fc,t_fc[i],m_fc_1,m_fc_2,t_fc_1[i],t_fc_2[i],piece_count,error,i,"H_fc_fc",nn)
+            #slack_num+=int_tmp
+            # m.addConstr(H_ht_ht[i] ==  H['H_ht_ht'][i])
+            m.addConstr(H_fc_fc[i] ==  H['H_fc_fc'][i])
+            m.addConstr(H_fc_ht[i] ==  H['H_fc_ht'][i])
+            # m.addConstr(H_fc_cdu[i] == H['H_fc_cdu'][i])
+            # m.addConstr(H_cdu_cdu[i] == H['H_cdu_cdu'][i])
+            # m.addConstr(H_cdu_ht[i] == H['H_cdu_ht'][i])
+            # m.addConstr(H_he_he[i] ==  H['H_he_he'][i])
+            # m.addConstr(H_he_cdu[i] == H['H_he_cdu'][i])
+            # m.addConstr(H_ct_cdu[i] == H['H_ct_cdu'][i])
+            # m.addConstr(H_ct_ct[i] ==  H['H_ct_ct'][i])
+
+            # m.addConstr(t_ht[i] == H['H_ht_ht'][i]/res_M_T['m_ht'])
+            # m.addConstr(t_cdu[i] == H['H_cdu_cdu'][i]/res_M_T['m_cdu'])
+            # m.addConstr(t_he[i] == H['H_he_he'][i]/res_M_T['m_he'])
+            m.addConstr(t_fc[i] == H['H_fc_fc'][i]/res_M_T['m_fc'][i])
+            # m.addConstr(t_ct[i] == H['H_ct_ct'][i]/res_M_T['m_ct'])
+
+    m.addConstr(gp.quicksum(p_pur)<=cer*(sum(ele_load)+sum(q_demand)+sum(g_demand)+sum(water_load)))
+    for i in range(period):
+        #m.addConstr(p_pur[i]==0)
+
+        # m.addConstr(1000000*z_fc[i]>=g_fc[i])
+        # m.addConstr(1000000*z_fc[i]>=p_fc[i])
+        # m.addConstr(1000000*z_ct[i]>=p_ct[i])
+        # m.addConstr(1000000*z_he[i]>=g_sol[i])
+        # m.addConstr(g_demand[i]>=g_sol[i])
+
+        # ghp
+        m.addConstr(10000000*z_ghpg[i]>=g_ghp[i])
+        m.addConstr(10000000*z_ghpq[i]>=q_ghp[i])
+        m.addConstr(z_ghpq[i]+z_ghpg[i]<=1)
+        m.addConstr(g_ghp[i]<=k_ghp_g*p_ghp[i])
+        m.addConstr(q_ghp[i]<=k_ghp_q*p_ghp[i])
+
+        # waste heat pump
+        m.addConstr(p_hp[i] >= k_hp*g_hp[i])
+        m.addConstr(g_hp[i] == q_hp[i]*(1-1/k_hp))
+
+        m.addConstr(p_el[i] + p_sol[i] + p_pump[i] + ele_load[i] == p_pur[i] + p_fc[i] + k_pv*area_pv*r[i])
+        m.addConstr(g_fc[i] <= eta_fc * k_fc * h_fc[i])
+        m.addConstr(p_pump[i] == k_pump * m_fc[i])
+        m.addConstr(p_fc[i] == k_fc * h_fc[i])#氢燃烧产电
+
+
+        ###m.addConstr(g_sol[i] == c_kWh * m_he * (t_cdu[i] - t_he[i]))
+        # m.addConstr(g_sol[i] <= c_kWh * (H_he_cdu[i] - H_he_he[i]))
+        ###m.addConstr(q_ct[i] == c_kWh * m_ct * (t_cdu[i] - t_ct[i]))
+        # m.addConstr(q_ct[i] == z_ct[i]*c_kWh * (H_ct_cdu[i] - H_ct_ct[i]))
+        # m.addConstr(p_ct[i] >= 0.04 * q_ct[i])
+        #m.addConstr(0.95*g_he[i] == c_kWh * m_idc * (t_idc[i] - t_ht[i]))
+        #m.addConstr(p_idcpump[i] == 0.6/1000 * (m_ct*z_ct[i]+m_he*z_he[i]))
+
+        m.addConstr(h_el[i] == k_el * p_el[i])
+        #m.addConstr(g_el[i] == 0.2017*p_el[i])
+        ###m.addConstr(g_fc[i] == c_kWh * m_fc * (t_fc[i] - t_ht[i]))
+        m.addConstr(g_fc[i] == c_kWh *(H_fc_fc[i] - H_fc_ht[i]))
+
         #m.addConstr(t_el[i] <= 80)
+        #m.addConstr(z_fc[i]+z_el[i]<=1)
         m.addConstr(h_sto[i]<=hst)
         m.addConstr(h_el[i]<=hst)
         #m.addConstr(t_ht[i] >= 50)
-        m.addConstr(18*h_fc[i] <= fc_max)
+        
+
+        #m.addConstr(g_demand[i] == c_kWh * m_de[i] * (t_ht[i] - t_de[i]))  
+        ###m.addConstr(q_demand[i] == c_kWh * m_cdu * (t_cdu[i] - t_ht[i])-g_fc[i])
+        # m.addConstr(q_demand[i] == c_kWh *(H_cdu_cdu[i] - H_cdu_ht[i])-g_fc[i])
+        
+        
+
+        m.addConstr(p_fc[i] <= fc_max)
         m.addConstr(p_pump[i]<=pump_max)
+        #m.addConstr(p_idcpump[i]<=idcpump_max)
+        #m.addConstr(p_eb[i]<=p_eb_max)
         m.addConstr(p_el[i] <= el_max)
-        m.addConstr(g_de[i] == c_kWh * m_de[i] * (t_ht[i] - t_de[i]))
-        m.addConstr(p_eb[i]<=p_eb_max)
-        m.addConstr(g_eb[i] == 0.8*p_eb[i])
-        #m.addConstr(m_fc <= m_ht)
-    # m.addConstr(m_fc[i] == m_ht/3)
-    # m.addConstr(m_ht >= 4200*100)
-    # m.addConstr(t_ht[i] <= 80)#强化条件
-    m.addConstr(gp.quicksum(p_pur)<=cer*(sum(p_load)+sum(g_de)/0.8))
-    m.addConstr( crf_pv * cost_pv*area_pv+ crf_el*cost_el*el_max+p_eb_max*crf_eb*p_eb_max
-        +crf_hst * hst*cost_hst +crf_water* cost_water_hot*m_ht + cost_pump*pump_max*crf_pump+crf_fc *cost_fc * fc_max + lambda_h*gp.quicksum(h_pur)*365+ 
-        gp.quicksum([p_pur[i]*lambda_ele_in[i] for i in range(period)])*365-gp.quicksum(p_sol)*lambda_ele_out*365<=obj)
-    # m.addConstr(crf_pv * cost_pv*area_pv+ crf_el*cost_el*el_max
-    #         +crf_hst * hst*cost_hst +crf_water* cost_water_hot*m_ht + cost_pump*pump_max*crf_pump+crf_fc *cost_fc * fc_max + lambda_h*gp.quicksum(h_pur)*365+ 
-    #         gp.quicksum([p_pur[i]*lambda_ele_in[i] for i in range(period)])*365-gp.quicksum(p_sol)*lambda_ele_out*365 <= obj)
+        m.addConstr(t_fc[i] <=t_ht_min)###
+        # m.addConstr(t_ht[i] <=65)###
+        m.addConstr(t_ht[i] >=t_ht_min)###
+        # m.addConstr(t_he[i] >= 30)###
+        # m.addConstr(t_cdu[i]<=95)###
+        if with_rlt == 1:
+            m.addConstr(H_fc_fc[i]<=t_fc_max*m_fc)
+            m.addConstr(H_fc_ht[i]<=t_ht_min*m_fc)
+            # m.addConstr(H_ht_ht[i]<=65*m_ht)
+            # m.addConstr(H_cdu_ht[i]<=65*m_cdu)
+            # m.addConstr(H_ht_ht[i]>=30*m_ht)
+            # m.addConstr(H_cdu_ht[i]>=30*m_cdu)
+
+            # m.addConstr(H_he_he[i]>=30*m_he)
+
+            # m.addConstr(H_ct_ct[i]>=26.4*m_ct)
+
+            # m.addConstr(H_fc_cdu[i]<=95*m_fc)
+            # m.addConstr(H_cdu_cdu[i]<=95*m_cdu)
+            # m.addConstr(H_he_cdu[i]<=95*m_he)
+            # m.addConstr(H_ct_cdu[i]<=95*m_ct)
+
+
+
+            # m.addConstr(H_ht_ht[i]>=5*H_cdu_ht[i])
+    
+    if with_rlt == 1:
+        for i in range(int(period/24)-1):
+            # m.addConstr(H_ht_ht[i*24+24] == H_ht_ht[24*i])
+            m.addConstr(H_fc_ht[i*24+24] == H_fc_ht[24*i])
+            # m.addConstr(H_cdu_ht[i*24+24] == H_cdu_ht[24*i])
+        # m.addConstr(H_ht_ht[-1] == H_ht_ht[0])
+        # m.addConstr(H_fc_ht[-1] == H_fc_ht[0])
+        # m.addConstr(H_cdu_ht[-1] == H_cdu_ht[0])
+
+    # m.addConstr(m_ht>=5*m_cdu)###
+    #m.addConstr(h_sto[-1] == h_sto[0])
+
     # m.setObjective( crf_pv * cost_pv*area_pv+ crf_el*cost_el*el_max
     #     +crf_hst * hst*cost_hst +crf_water* cost_water_hot*m_ht + crf_fc *cost_fc * fc_max + lambda_h*gp.quicksum(h_pur)*365+ 
     #     365*gp.quicksum([p_pur[i]*lambda_ele_in[i] for i in range(24)])-365*gp.quicksum(p_sol)*lambda_ele_out , GRB.MINIMIZE)
-    m.setObjective( crf_pv * cost_pv*area_pv+ crf_el*cost_el*el_max
-        +crf_hst * hst*cost_hst +crf_water* cost_water_hot*m_ht + cost_pump*pump_max*crf_pump+crf_fc *cost_fc * fc_max + lambda_h*gp.quicksum(h_pur)*365/days+ 
+    m.setObjective(  lambda_h*gp.quicksum(h_pur)*365/days+ 
         gp.quicksum([p_pur[i]*lambda_ele_in[i] for i in range(period)])*365/days-gp.quicksum(p_sol)*lambda_ele_out*365/days, GRB.MINIMIZE)
+
+    m.addConstr(opex ==  lambda_h*gp.quicksum(h_pur)*365/days+ 
+        gp.quicksum([p_pur[i]*lambda_ele_in[i] for i in range(period)])*365/days-gp.quicksum(p_sol)*lambda_ele_out*365/days)
     #-gp.quicksum(p_sol)*lambda_ele_out 
     # First optimize() call will fail - need to set NonConvex to 2
     m.params.NonConvex = 1
-    m.params.MIPGap = 0.01
+    m.params.MIPGap = 0.05
+    if nn != 1:
+        m.params.MIPGap = 0.05
     # m.optimize()
     #m.computeIIS()
-    #m.write('model.mps')
-    #exit(0)
-    H = {'H_ht_ht':H_ht_ht,
-         'H_fc_fc':H_fc_fc,
-         'H_fc_ht':H_fc_ht
-        }
     try:
         m.optimize()
-        if m.Status != gp.GRB.OPTIMAL:
-            m.computeIIS()
-            m.write("model1.ilp")
-
-            return 404,m_ht_1,m_ht_2,t_ht_1,t_ht_2,m_fc_1,m_fc_2,t_fc_1,t_fc_2,H,[0 for i in range(period*3)],0
+        #m.computeIIS()
+        #m.write('model.ilp')
     except gp.GurobiError:
-        return 404,m_ht_1,m_ht_2,t_ht_1,t_ht_2,m_fc_1,m_fc_2,t_fc_1,t_fc_2,H,[0 for i in range(period*3)],0
         print("Optimize failed due to non-convexity")
-
-    # 有的变量出现在不同的双线性项中，边界取并集
-    #m_fc_1 = max(m_fc_1,60*max([g_fc[i].X for i in range(period)]))
-    #m_fc_2 = min(m_fc_2,80*max([g_fc[i].X for i in range(period)]))
-    #m_el_1 = max(m_el_1,60*max([g_el[i].X for i in range(period)]))
-    #m_el_2 = max(m_el_2,80*max([g_el[i].X for i in range(period)]))
-    error = [(H_ht_ht[i].X-m_ht.X*t_ht[i].X)/H_ht_ht[i].X for i in range(period)]
-    error +=[(H_fc_fc[i].X-m_fc.X*t_fc[i].X)/H_fc_fc[i].X for i in range(period)]
-    error +=[(H_fc_ht[i].X-m_fc.X*t_ht[i].X)/H_fc_ht[i].X for i in range(period)]
-    #error +=[(H_el_el[i].X-m_el.X*t_el[i].X)/H_el_el[i].X for i in range(period)]
-    #error +=[(H_el_ht[i].X-m_el.X*t_ht[i].X)/H_el_ht[i].X for i in range(period)]
-    print("OBJ\n")
-    print(m.objVal)
+    if m.status == GRB.INFEASIBLE or m.status == 4:
+        print('Model is infeasible')
+        m.computeIIS()
+        m.write('model.ilp')
+        print("Irreducible inconsistent subsystem is written to file 'model.ilp'")
+        return 1,1,1,1,1,1,10000000
+    
+    g_ht = [c_kWh*m_ht*(t_ht[i+1]-t_ht[i]) for i in range(period-1)]
+    g_ht.append(c_kWh*m_ht*(t_ht[0]-t_ht[-1]))
+    q_ct = [-c_kWh*m_ct*(t_ct[i+1]-t_ct[i]) for i in range(period-1)]
+    q_ct.append(-c_kWh*m_ct*(t_ct[0]-t_ct[-1]))
     ans = {'objective':m.objVal,
-            'm_ht':m_ht.X,
-            'm_fc':m_fc.X,
-            #'m_el':m_el.X,
-            'fc_max':fc_max.X,
-            'el_max':el_max.X,
-            'p_eb_max':p_eb_max.X,
-            'area_pv':area_pv.X,
-            'error_H_ht_ht':[(H_ht_ht[i].X-m_ht.X*t_ht[i].X)/H_ht_ht[i].X for i in range(period)],
-            'error_H_fc_fc':[(H_fc_fc[i].X-m_fc.X*t_fc[i].X)/H_fc_fc[i].X for i in range(period)],
-            'error_H_fc_ht':[(H_fc_ht[i].X-m_fc.X*t_ht[i].X)/H_fc_ht[i].X for i in range(period)],
-            #'error_H_el_el':[(H_el_el[i].X-m_el.X*t_el[i].X)/H_el_el[i].X for i in range(period)],
-            #'error_H_el_ht':[(H_el_ht[i].X-m_el.X*t_ht[i].X)/H_el_ht[i].X for i in range(period)],
+
+            #'m_wwt':m_wwt.X,
+            # "capex":capex.x,
+            "opex":opex.x,
+            
+
+
+            "cer":sum([p_pur[i].X for i in range(period)])/(sum(ele_load)+sum(q_demand)*0.04),
             'p_pv':[k_pv*area_pv.X*r[i] for i in range(period)],
-            'p_load':p_load,
+            'p_load':ele_load,
             'p_el':[p_el[i].X for i in range(period)],
             'p_fc':[p_fc[i].X for i in range(period)],
             'p_pur':[p_pur[i].X for i in range(period)],
             'p_pump':[p_pump[i].X for i in range(period)],
             'p_sol':[p_sol[i].X for i in range(period)],
-            'p_eb':[p_eb[i].X for i in range(period)],
-            'g_load':g_de,
-            'g_el':[g_el[i].X for i in range(period)],
-            'z_el':[z_el[i].X for i in range(period)],
+            'p_hp':[p_hp[i].X for i in range(period)],
+            'p_ghp':[p_ghp[i].X for i in range(period)],
+            
+
+            #'p_idcpump':[p_idcpump[i].X for i in range(period)],
+            'g_load':g_demand,
             'g_fc':[g_fc[i].X for i in range(period)],
-            'z_fc':[z_fc[i].X for i in range(period)],
-            'g_eb':[g_eb[i].X for i in range(period)],
+            'g_hp':[g_hp[i].X for i in range(period)],
+            'g_ghp':[g_ghp[i].X for i in range(period)],
+            'z_ghpg':[z_ghpg[i].X for i in range(period)],
+            'g_ht':[g_ht[i] for i in range(period)],
+
+            'q_load':q_demand,
+            'q_hp':[q_hp[i].X for i in range(period)],
+            'q_ghp':[q_ghp[i].X for i in range(period)],
+            'z_gphq':[z_ghpq[i].X for i in range(period)],
+
+
+            # 'q_ct':[q_ct[i].X for i in range(period)],
+            # 'z_fc':[z_fc[i].X for i in range(period)],
+            # #'g_he':[g_he[i].X for i in range(period)],
+            # 'g_idc':[c_kWh * m_idc.X  * (t_idc[i].X  - t_ht[i].X )for i in range(period)],
+            # 'z_ct':[z_ct[i].X for i in range(period)],
+            # 'z_he':[z_he[i].X for i in range(period)],
+            # 'z_idc':[z_idc[i].X for i in range(period)],
 
             't_ht':[t_ht[i].X for i in range(period)],
-            #'t_el':[t_el[i].X for i in range(period)],
+            't_ct':[t_ct[i].X for i in range(period)],
+            't_fc':[t_fc[i].X for i in range(period)],
+
+            #'m_cdu':[m_cdu[i].X for i in range(period)],
+            'm_fc':m_fc.x,
             'h_el':[h_el[i].X for i in range(period)],
             'h_fc':[h_fc[i].X for i in range(period)],
-            't_fc':[t_fc[i].X for i in range(period)],
-            't_de':[t_de[i].X for i in range(period)],
             'h_sto':[h_sto[i].X for i in range(period)],
             'h_pur':[h_pur[i].X for i in range(period)]
             }
-    H = {'H_ht_ht':m.getAttr('x', H_ht_ht),
-         'H_fc_fc':m.getAttr('x', H_fc_fc),
-         'H_fc_ht':m.getAttr('x', H_fc_ht)
+    H = {
+         'H_fc_fc'  :m.getAttr('x', H_fc_fc),
+         'H_fc_ht'  :m.getAttr('x', H_fc_ht),
+        #  'H_fc_cdu' :m.getAttr('x', H_fc_cdu),
+        #  'H_cdu_ht' :m.getAttr('x', H_cdu_ht),
+        #  'H_cdu_cdu':m.getAttr('x', H_cdu_cdu),
+        #  'H_he_he'  :m.getAttr('x', H_he_he),
+        #  'H_he_cdu' :m.getAttr('x', H_he_cdu),
+        #  "H_ct_cdu" :m.getAttr('x', H_ct_cdu),
+        #  "H_ct_ct"  :m.getAttr('x', H_ct_ct),
         }
-
-    return obj,m_ht_1,m_ht_2,t_ht_1,t_ht_2,m_fc_1,m_fc_2,t_fc_1,t_fc_2,H,error,ans,slack_num
+    M = {
+        # "m_ht"   :[m_ht_1,m_ht_2],
+        "m_fc"   :[m_fc_1,m_fc_2],
+        # "m_cdu"  :[m_cdu_1,m_cdu_2],
+        # "m_he"   :[m_he_1,m_he_2],
+        # "m_ct"   :[m_ct_1,m_ct_2]
+    }
+    T = {
+        "t_ht"   :[t_ht_1,t_ht_2],
+        "t_fc"   :[t_fc_1,t_fc_2],
+        # "t_cdu"  :[t_cdu_1,t_cdu_2],
+        # "t_he"   :[t_he_1,t_he_2],
+        # "t_ct"   :[t_ct_1,t_ct_2]
+    }
+    res_M_T = {
+        # 'm_cdu':m_cdu.x,
+        # 'm_he':m_he.x,
+        'm_fc':m_fc.x,
+        # 'm_ht':m_ht.x,
+        # 'm_ct':m_ct.x,
+        't_ht':[t_ht[i].X for i in range(period)],
+        # 't_cdu':[t_cdu[i].X for i in range(period)],
+        # 't_he':[t_he[i].X for i in range(period)],
+        't_fc':[t_fc[i].X for i in range(period)],
+        # 't_ct':[t_ct[i].X for i in range(period)]
+    }
+    error = {
+        # "H_ht_ht"   : [(H_ht_ht[i].X-m_ht.X*t_ht[i].X)/    (m_ht.X*t_ht[i].X  +0.001)  for i in range(period)],
+        "H_fc_fc"   : [(H_fc_fc[i].X-m_fc.X*t_fc[i].X)/    (m_fc.X*t_fc[i].X  +0.001)  for i in range(period)],
+        "H_fc_ht"   : [(H_fc_ht[i].X-m_fc.X*t_ht[i].X)/    (m_fc.X*t_ht[i].X  +0.001)  for i in range(period)],
+        # "H_fc_cdu"  : [(H_fc_cdu[i].X-m_fc.X*t_cdu[i].X)/  (m_fc.X*t_cdu[i].X +0.001)  for i in range(period)],
+        # "H_cdu_cdu" : [(H_cdu_cdu[i].X-m_cdu.X*t_cdu[i].X)/(m_cdu.X*t_cdu[i].X+0.001)  for i in range(period)],
+        # "H_cdu_ht"  : [(H_cdu_ht[i].X-m_cdu.X*t_ht[i].X)/  (m_cdu.X*t_ht[i].X +0.001)  for i in range(period)],
+        # "H_he_he"   : [(H_he_he[i].X-m_he.X*t_he[i].X)/    (m_he.X*t_he[i].X  +0.001)  for i in range(period)],
+        # "H_he_cdu"  : [(H_he_cdu[i].X-m_he.X*t_cdu[i].X)/  (m_he.X*t_cdu[i].X +0.001)  for i in range(period)],
+        # "H_ct_cdu"  : [(H_ct_cdu[i].X-m_ct.X*t_cdu[i].X)/  (m_ct.X*t_cdu[i].X  +0.001)  for i in range(period)],
+        # "H_ct_ct"   : [(H_ct_ct[i].X-m_ct.X*t_ct[i].X)/    (m_ct.X*t_ct[i].X +0.001)  for i in range(period)],
+    }
+    return M,T,res_M_T,H,error,ans,slack_num
