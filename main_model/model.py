@@ -2,7 +2,7 @@
 Author: guo_idpc
 Date: 2023-02-23 19:15:43
 LastEditors: guo_idpc 867718012@qq.com
-LastEditTime: 2023-02-23 20:01:11
+LastEditTime: 2023-02-24 11:33:47
 FilePath: /bilinear/main_model/model.py
 Description: 人一生会遇到约2920万人,两个人相爱的概率是0.000049,所以你不爱我,我不怪你.
 
@@ -55,6 +55,9 @@ import random
 import time
 import xlrd
 import csv
+
+from method import piece_McCormick
+
 def crf(year):
     i = 0.08
     crf=((1+i)**year)*i/((1+i)**year-1);
@@ -66,10 +69,10 @@ days=4
 nn=2
 ggggap=0.01
 
-book_spr = xlrd.open_workbook('cspringdata.xlsx')
-book_sum = xlrd.open_workbook('csummerdata.xlsx')
-book_aut = xlrd.open_workbook('cautumndata.xlsx')
-book_win = xlrd.open_workbook('cwinterdata.xlsx')
+book_spr = xlrd.open_workbook('data/cspringdata.xlsx')
+book_sum = xlrd.open_workbook('data/csummerdata.xlsx')
+book_aut = xlrd.open_workbook('data/cautumndata.xlsx')
+book_win = xlrd.open_workbook('data/cwinterdata.xlsx')
 data_spr = book_spr.sheet_by_index(0)
 data_sum = book_sum.sheet_by_index(0)
 data_aut = book_aut.sheet_by_index(0)
@@ -113,8 +116,44 @@ lambda_ele_out = 0.3
 #lambda_ele_in = lambda_ele_in*30
 
 
+with open('CHN_Shaanxi.Xian.570360_CSWD.csv') as csvfile:
+    reader = csv.DictReader(csvfile)
+    for row in reader:
+        ele_load.append(float(row['Electricity Load [kwh]']))
+        q_demand.append(float(row['Cooling Load [kwh]']))
+        g_demand.append(float(row['Heating Load [kwh]']))
+        r_solar.append(float(row['Environment:Site Direct Solar Radiation Rate per Area [W/m2](Hourly)']))
+q_demand = [0 if num == '' else num for num in q_demand]
+g_demand = [0 if num == '' else num for num in g_demand]
+#m_demand = [0 if num == '' else num for num in m_demand]
+ele_load = [0 if num == '' else num for num in ele_load]
 
+if days == 4:
+    q_demand = q_demand[384+24:384+48]+q_demand[2496:2496+24]+q_demand[4680:4680+24]+q_demand[6888:6888+24]
+    g_demand = g_demand[384+24:384+48]+g_demand[2496:2496+24]+g_demand[4680:4680+24]+g_demand[6888:6888+24]
+    r_solar =   r_solar[384+24:384+48]+r_solar[2496:2496+24]+r_solar[4680:4680+24]+r_solar[6888:6888+24]
+    ele_load = ele_load[384+24:384+48]+ele_load[2496:2496+24]+ele_load[4680:4680+24]+ele_load[6888:6888+24]
 
+elif days == 7:
+    q_demand = q_demand[24:8*24]
+    g_demand = g_demand[24:8*24]
+    r_solar =   r_solar[24:8*24]
+    ele_load = ele_load[24:8*24]
+else:
+    g_demand = g_demand[384+24:384+48]+g_demand[1080+24:1080+48]+g_demand[1752:1752+24]+g_demand[2496+48:2496+72]+g_demand[3216:3216+24]+g_demand[3960:3960+24]+g_demand[4680+48:4680+72]+g_demand[5424:5424+24]+g_demand[6168:6168+24]+g_demand[6888+24:6888+48]+g_demand[7632:7632+24]+g_demand[8352:8352+24]
+    q_demand = q_demand[384+24:384+48]+q_demand[1080+24:1080+48]+q_demand[1752:1752+24]+q_demand[2496+48:2496+72]+q_demand[3216:3216+24]+q_demand[3960:3960+24]+q_demand[4680+48:4680+72]+q_demand[5424:5424+24]+q_demand[6168:6168+24]+q_demand[6888+24:6888+48]+q_demand[7632:7632+24]+q_demand[8352:8352+24]
+    r_solar =   r_solar[384+24:384+48]+r_solar[1080+24:1080+48]+r_solar[1752:1752+24]+r_solar[2496+48:2496+72]+r_solar[3216:3216+24]+r_solar[3960:3960+24]+r_solar[4680+48:4680+72]+r_solar[5424:5424+24]+r_solar[6168:6168+24]+r_solar[6888+24:6888+48]+r_solar[7632:7632+24]+r_solar[8352:8352+24]
+    ele_load = ele_load[384+24:384+48]+ele_load[1080+24:1080+48]+ele_load[1752:1752+24]+ele_load[2496+48:2496+72]+ele_load[3216:3216+24]+ele_load[3960:3960+24]+ele_load[4680+48:4680+72]+ele_load[5424:5424+24]+ele_load[6168:6168+24]+ele_load[6888+24:6888+48]+ele_load[7632:7632+24]+ele_load[8352:8352+24]
+
+g_de = [g_demand[i]*3 for i in range(len(ele_load))]
+r=r_solar
+p_load = [ele_load[i]+q_demand[i] for i in range(len(ele_load))]
+
+import matplotlib.pyplot as plt
+x = [i for i in range(0,24*6)]
+plt.plot(x,g_de)
+plt.show()
+exit(0)
 
 #g_de = g_de_w*days
 #p_load = p_load_winter*days
