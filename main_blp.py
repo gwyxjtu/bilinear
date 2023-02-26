@@ -2,7 +2,7 @@
 Author: guo_idpc
 Date: 2023-02-23 17:19:03
 LastEditors: guo_idpc 867718012@qq.com
-LastEditTime: 2023-02-24 23:00:36
+LastEditTime: 2023-02-26 21:38:57
 FilePath: /bilinear/main_blp.py
 Description: 人一生会遇到约2920万人,两个人相爱的概率是0.000049,所以你不爱我,我不怪你.
 
@@ -11,11 +11,35 @@ Copyright (c) 2023 by ${git_name_email}, All Rights Reserved.
 from main_model.model import *
 from main_model.method import *
 
+def plot_for_test(error_max,error_min,obj_print,res):
+    '''
+    description: error放在一个图里面，obj单独一个图
+    return {*}
+    '''    
+    import matplotlib.pyplot as plt
+
+    x = [i for i in range(len(error_max))]
+    plt.plot(x,error_max)
+    plt.plot(x,error_min)
+    # plt.plot(x,g_demand)
+    # plt.plot(x,q_demand)
+    # plt.plot(x,water_load)
+    # plt.plot(x,ele_load)
+    # plt.show()
+    plt.savefig('img/error.png')
+    plt.close()
+    y = [i for i in range(len(obj_print))]
+    plt.plot(y,obj_print)
+    plt.savefig('img/obj.png')
+    plt.close()
+    
+    # exit(0)
 
 if __name__ == '__main__':
     period = len(g_demand)
     # m_ht_1,m_ht_2   = 100000,1000000
-    m_fc_1,m_fc_2   = 10000,100000
+    m_fc_1   =[0 for _ in range(period)]
+    m_fc_2   =[100000 for _ in range(period)]
     # m_cdu_1,m_cdu_2 = 100000,1000000
     # m_he_1,m_he_2   = 10000,100000
     # m_ct_1,m_ct_2   = 10000,100000
@@ -36,7 +60,7 @@ if __name__ == '__main__':
     #m_el_1,m_el_2 =10000,100000
     #t_el_1 = [50 for _ in range(period+1)]
     #t_el_2 = [80 for _ in range(period+1)]
-    n=1
+    n =1
     #gap = ggggap
     obj = 100000000000
     max_err=[]
@@ -44,16 +68,16 @@ if __name__ == '__main__':
     slack_num_list=[]
     #error = [1 for _ in range(period*nn*3)]
     error = {
-        "H_ht_ht"   : [0.1 for _ in range(period)],
+        # "H_ht_ht"   : [0.1 for _ in range(period)],
         "H_fc_fc"   : [0.1 for _ in range(period)],
         "H_fc_ht"   : [0.1 for _ in range(period)],
-        "H_fc_cdu"  : [0.1 for _ in range(period)],
-        "H_cdu_cdu" : [0.1 for _ in range(period)],
-        "H_cdu_ht"  : [0.1 for _ in range(period)],
-        "H_he_he"   : [0.1 for _ in range(period)],
-        "H_he_cdu"  : [0.1 for _ in range(period)],
-        "H_ct_cdu"  : [0.1 for _ in range(period)],
-        "H_ct_ct"   : [0.1 for _ in range(period)]
+        # "H_fc_cdu"  : [0.1 for _ in range(period)],
+        # "H_cdu_cdu" : [0.1 for _ in range(period)],
+        # "H_cdu_ht"  : [0.1 for _ in range(period)],
+        # "H_he_he"   : [0.1 for _ in range(period)],
+        # "H_he_cdu"  : [0.1 for _ in range(period)],
+        # "H_ct_cdu"  : [0.1 for _ in range(period)],
+        # "H_ct_ct"   : [0.1 for _ in range(period)]
     }
     M = {
         # "m_ht"   :[m_ht_1,m_ht_2],
@@ -71,17 +95,17 @@ if __name__ == '__main__':
     }
     start =time.time()
     M,T,res_M_T,H,error,ans,slack_num = opt(M,T,error,0,1,1)
-    M,T = bound_con(period,H,gap,M,T,res_M_T,n,0.99)
+    M,T = bound_con(period,H,gap,M,T,res_M_T,n,0.9999)
     errorl = [abs(ee[i]) for ee in error.values() for i in range(len(ee))]
     #print(len(error))
-    max_err.append(max(errorl))
-    mean_err.append(np.mean(errorl))
+    # max_err.append(max(errorl))
+    # mean_err.append(np.mean(errorl))
     slack_num_list.append(slack_num)
     print(max(errorl))
     print(min(errorl))
     #exit(0)
     #all(error[i]>=0.005 for i in range(len(error)))
-    
+    res = ans
     obj_print=[]
     while max(errorl)>gap or min(errorl)<-gap:
 
@@ -107,14 +131,15 @@ if __name__ == '__main__':
         mean_err.append(np.mean(errorl))
         slack_num_list.append(slack_num)
         if max(errorl)>0.7:
-            
-            to_csv(error,"errorbig")
+            pd.DataFrame(error).to_csv("errorbig.csv")
+            # to_csv(error,"errorbig")
             #input()
         print(max_err)
         print(mean_err)
         print(slack_num_list)
         n += 1
         print(obj_print)
+    print("n:")
     print(n)
     
     print('------')
@@ -131,9 +156,10 @@ if __name__ == '__main__':
     # print(obj_print)
     # print(max_err)
     # print(mean_err)
-    to_csv(res,"test")
-    to_csv(error,"error")
+    pd.DataFrame(res).to_csv("test.csv")
+    pd.DataFrame(error).to_csv("error.csv")
+    # to_csv(error,"error")
 
-
+    plot_for_test(max_err,mean_err,obj_print,res)
     end=time.time()
     print('Running time: %s Seconds'%(end-start))

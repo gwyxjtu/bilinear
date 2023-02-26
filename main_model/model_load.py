@@ -2,7 +2,7 @@
 Author: guo_idpc
 Date: 2023-02-24 15:03:18
 LastEditors: guo_idpc 867718012@qq.com
-LastEditTime: 2023-02-24 22:38:20
+LastEditTime: 2023-02-26 21:32:15
 FilePath: /bilinear/main_model/model_load.py
 Description: 人一生会遇到约2920万人,两个人相爱的概率是0.000049,所以你不爱我,我不怪你.
 
@@ -10,9 +10,9 @@ Copyright (c) 2023 by ${git_name_email}, All Rights Reserved.
 '''
 import pandas as pd
 import csv
-cer = 0.5
+cer = 0.1
 days=12
-nn =1
+nn =3
 with_rlt = 0
 
 def crf(year):
@@ -66,17 +66,17 @@ r_solar = []
 book_cold = pd.read_excel('./data/cold.xlsx')
 book_heat = pd.read_excel('./data/heat.xlsx')
 for l in range(8760):
-    q_demand.append(4*book_cold.iloc[l,1])
-    ele_load.append(3/2*4*book_cold.iloc[l,1])
+    q_demand.append(book_cold.iloc[l,1])
+    ele_load.append(4/3*book_cold.iloc[l,1])
 
 # 热负荷从文章里面出
-for l in range(2904):
-    g_demand.append(3*book_heat.iloc[l,3])
-g_demand = g_demand[:1128]+[0 for _ in range(8760-2904)]+g_demand[1128:]
+# for l in range(2904):
+#     g_demand.append(3*book_heat.iloc[l,3])
+# g_demand = g_demand[:1128]+[0 for _ in range(8760-2904)]+g_demand[1128:]
 # 热负荷从榆林里面出，包括生活热水
 book_water = pd.read_excel('./data/yulin_water_load.xlsx')
-g_demand = list(book_water['供暖热负荷(kW)'])
-water_load = list(book_water['生活热水负荷kW'])
+g_demand = list(book_water['供暖热负荷(kW)'].fillna(0))
+water_load = list(book_water['生活热水负荷kW'].fillna(0))
 # book_cold = xlrd.open_workbook('./data/cold.xlsx')
 # book_heat = xlrd.open_workbook('./data/heat.xlsx')
 # data_cold = book_cold.sheet_by_index(0)
@@ -100,7 +100,14 @@ with open("data/"+"solar.csv") as renewcsv:
         r_solar[i] += float(row['electricity'])
         i+=1
 r_solar = r_solar[-8:]+r_solar[:-8]
-#g_de = [g_demand[i]*3 for i in range(len(ele_load))]
+
+
+
+# g_demand = [g_demand[i]/3 for i in range(len(ele_load))]
+
+
+
+
 m_date = [31,28,31,30,31,30,31,31,30,31,30,31]
 m_date = [sum(m_date[:i])*24 for i in range(12)]
 m_date.append(8760)

@@ -2,12 +2,34 @@
 Author: guo_idpc
 Date: 2023-02-23 19:34:32
 LastEditors: guo_idpc 867718012@qq.com
-LastEditTime: 2023-02-24 18:59:04
+LastEditTime: 2023-02-26 11:21:33
 FilePath: /bilinear/main_model/method.py
 Description: 人一生会遇到约2920万人,两个人相爱的概率是0.000049,所以你不爱我,我不怪你.
 
 Copyright (c) 2023 by ${git_name_email}, All Rights Reserved. 
 '''
+'''
+                       .::::.
+                     .::::::::.
+                    :::::::::::
+                 ..:::::::::::'
+              '::::::::::::'
+                .::::::::::
+           '::::::::::::::..
+                ..::::::::::::.
+              ``::::::::::::::::
+               ::::``:::::::::'        .:::.
+              ::::'   ':::::'       .::::::::.
+            .::::'      ::::     .:::::::'::::.
+           .:::'       :::::  .:::::::::' ':::::.
+          .::'        :::::.:::::::::'      ':::::.
+         .::'         ::::::::::::::'         ``::::.
+     ...:::           ::::::::::::'              ``::.
+    ````':.          ':::::::::'                  ::::..
+                       '.:::::'                    ':'````..
+'''
+
+
 import copy
 import gurobipy as gp
 from gurobipy import GRB
@@ -17,9 +39,10 @@ import random
 import time
 import xlrd
 import csv
-ggggap=0.05  #不用分片线性的gap
+ggggap=0.02  #不用分片线性的gap
 gap=0.01  #最终的终止条件gap
 def McCormick(model,H,x,y,x1,x2,y1,y2,piece_count,n):
+    
     model.addConstr(H>=x1*y+x*y1-x1*y1)
     model.addConstr(H>=x2*y+x*y2-x2*y2)
     model.addConstr(H<=x2*y+x*y1-x2*y1)
@@ -118,31 +141,31 @@ def bound_con(period,H,gap,M,T,res_M_T,n,k):
 
 
 
-    m_ht_1,m_ht_2   = M["m_ht"][0], M["m_ht"][1]
+    # m_ht_1,m_ht_2   = M["m_ht"][0], M["m_ht"][1]
     m_fc_1,m_fc_2   = M["m_fc"][0], M["m_fc"][1]
-    m_cdu_1,m_cdu_2 = M["m_cdu"][0], M["m_cdu"][1]
-    m_he_1,m_he_2   = M["m_he"][0], M["m_he"][1]
-    m_ct_1,m_ct_2   = M["m_ct"][0], M["m_ct"][1]
+    # m_cdu_1,m_cdu_2 = M["m_cdu"][0], M["m_cdu"][1]
+    # m_he_1,m_he_2   = M["m_he"][0], M["m_he"][1]
+    # m_ct_1,m_ct_2   = M["m_ct"][0], M["m_ct"][1]
 
     t_ht_1,t_ht_2   = T['t_ht'][0] ,T['t_ht'][1]
     t_fc_1,t_fc_2   = T['t_fc'][0] ,T['t_fc'][1]
-    t_cdu_1,t_cdu_2 = T['t_cdu'][0],T['t_cdu'][1]
-    t_he_1,t_he_2   = T['t_he'][0] ,T['t_he'][1]
-    t_ct_1,t_ct_2   = T['t_ct'][0] ,T['t_ct'][1]
+    # t_cdu_1,t_cdu_2 = T['t_cdu'][0],T['t_cdu'][1]
+    # t_he_1,t_he_2   = T['t_he'][0] ,T['t_he'][1]
+    # t_ct_1,t_ct_2   = T['t_ct'][0] ,T['t_ct'][1]
 
 
 
-    m_cdu = res_M_T['m_cdu']
-    m_he = res_M_T['m_he']
+    # m_cdu = res_M_T['m_cdu']
+    # m_he = res_M_T['m_he']
     m_fc = res_M_T['m_fc']
-    m_ht = res_M_T['m_ht']
-    m_ct = res_M_T['m_ct']
+    # m_ht = res_M_T['m_ht']
+    # m_ct = res_M_T['m_ct']
 
     t_ht = res_M_T['t_ht']
-    t_cdu = res_M_T['t_cdu']
-    t_he = res_M_T['t_he']
+    # t_cdu = res_M_T['t_cdu']
+    # t_he = res_M_T['t_he']
     t_fc = res_M_T['t_fc']
-    t_ct = res_M_T['t_ct']
+    # t_ct = res_M_T['t_ct']
 
 
     #fix 存在的问题，一个温度对应多个m，按照一个fix别的误差可能会增大。
@@ -153,65 +176,56 @@ def bound_con(period,H,gap,M,T,res_M_T,n,k):
     # t_ct = res_M_T['t_ct']
 
 
-    d_m_ht  = max(m_ht-m_ht_1,m_ht_2-m_ht)
-    d_m_fc  = max(m_fc-m_fc_1,m_fc_2-m_fc)
-    d_m_cdu = max(m_cdu-m_cdu_1,m_cdu_2-m_cdu)
-    d_m_he  = max(m_he-m_he_1,m_he_2-m_he)
-    d_m_ct  = max(m_ct-m_ct_1,m_ct_2-m_ct)
-    #d_m_el = max(m_el-m_el_1,m_el_2-m_el)
 
-    m_ht_1 = max(m_ht_1,m_ht-k*d_m_ht)
-    m_fc_1 = max(m_fc_1,m_fc-k*d_m_fc)
-    m_cdu_1 = max(m_cdu_1,m_cdu-k*d_m_cdu)
-    m_he_1 = max(m_he_1,m_he-k*d_m_he)
-    m_ct_1 = max(m_ct_1,m_ct-k*d_m_ct)
-    #m_el_1 = max(m_el_1,m_el-k*d_m_el)
+    # d_m_fc  = max(m_fc-m_fc_1,m_fc_2-m_fc)
+  
+    # m_fc_1 = max(m_fc_1,m_fc-k*d_m_fc)
 
-    m_ht_2 = min(m_ht_2,m_ht+k*d_m_ht)
-    m_fc_2 = min(m_fc_2,m_fc+k*d_m_fc)
-    m_cdu_2 = min(m_cdu_2,m_cdu+k*d_m_cdu)
-    m_he_2 = min(m_he_2,m_he+k*d_m_he)
-    m_ct_2 = min(m_ct_2,m_ct+k*d_m_ct)
-    #m_el_2 = min(m_el_2,m_el+k*d_m_el)
+    # m_fc_2 = min(m_fc_2,m_fc+k*d_m_fc)
+ 
 
     #init
     d_t_ht = [0 for _ in range(period)]
     d_t_fc = [0 for _ in range(period)]
-    d_t_cdu = [0 for _ in range(period)]
-    d_t_he = [0 for _ in range(period)]
-    d_t_ct = [0 for _ in range(period)]
+    d_m_fc = [0 for _ in range(period)]
+    # d_t_cdu = [0 for _ in range(period)]
+    # d_t_he = [0 for _ in range(period)]
+    # d_t_ct = [0 for _ in range(period)]
     #d_t_el = [0 for _ in range(period)]
     for i in range(period):
         d_t_ht[i] = max(t_ht[i]-t_ht_1[i],t_ht_2[i]-t_ht[i]) 
         d_t_fc[i] = max(t_fc[i]-t_fc_1[i],t_fc_2[i]-t_fc[i])
-        d_t_cdu[i] = max(t_cdu[i]-t_cdu_1[i],t_cdu_2[i]-t_cdu[i])
-        d_t_he[i] = max(t_he[i]-t_he_1[i],t_he_2[i]-t_he[i])
-        d_t_ct[i] = max(t_ct[i]-t_ct_1[i],t_ct_2[i]-t_ct[i])
+        d_m_fc[i] = max(m_fc[i]-m_fc_1[i],m_fc_2[i]-m_fc[i])
+        # d_t_cdu[i] = max(t_cdu[i]-t_cdu_1[i],t_cdu_2[i]-t_cdu[i])
+        # d_t_he[i] = max(t_he[i]-t_he_1[i],t_he_2[i]-t_he[i])
+        # d_t_ct[i] = max(t_ct[i]-t_ct_1[i],t_ct_2[i]-t_ct[i])
         #d_t_el[i] = max(t_el[i]-t_el_1[i],t_el_2[i]-t_el[i])
         t_ht_1[i] = max(t_ht_1[i],t_ht[i]-k*d_t_ht[i]) #if abs(H['H_ht_ht'][i]-m_ht*t_ht[i])/H['H_ht_ht'][i] >= 0.000001 else t_ht_1[i]
         t_fc_1[i] = max(t_fc_1[i],t_fc[i]-k*d_t_fc[i]) #if abs(H['H_fc_fc'][i]-m_fc*t_fc[i])/H['H_fc_fc'][i] >= 0.000001 else t_fc_1[i]
-        t_cdu_1[i] = max(t_cdu_1[i],t_cdu[i]-k*d_t_cdu[i])
-        t_he_1[i] = max(t_he_1[i],t_he[i]-k*d_t_he[i])
-        t_ct_1[i] = max(t_ct_1[i],t_ct[i]-k*d_t_ct[i])
+        m_fc_1[i] = max(m_fc_1[i],m_fc[i]-k*d_m_fc[i])
+        # t_cdu_1[i] = max(t_cdu_1[i],t_cdu[i]-k*d_t_cdu[i])
+        # t_he_1[i] = max(t_he_1[i],t_he[i]-k*d_t_he[i])
+        # t_ct_1[i] = max(t_ct_1[i],t_ct[i]-k*d_t_ct[i])
         #t_el_1[i] = max(t_el_1[i],t_el[i]-k*d_t_el[i]) #if abs(H['H_el_el'][i]-m_el*t_el[i])/H['H_el_el'][i] >= 0.000001 else t_el_1[i]
         t_ht_2[i] = min(t_ht_2[i],t_ht[i]+k*d_t_ht[i]) #if abs(H['H_ht_ht'][i]-m_ht*t_ht[i])/H['H_ht_ht'][i] >= 0.000001 else t_ht_2[i]
         t_fc_2[i] = min(t_fc_2[i],t_fc[i]+k*d_t_fc[i]) #if abs(H['H_fc_fc'][i]-m_fc*t_fc[i])/H['H_fc_fc'][i] >= 0.000001 else t_fc_2[i]
-        t_cdu_2[i] = min(t_cdu_2[i],t_cdu[i]+k*d_t_cdu[i])
-        t_he_2[i] = min(t_he_2[i],t_he[i]+k*d_t_he[i])
-        t_ct_2[i] = min(t_ct_2[i],t_ct[i]+k*d_t_ct[i])
+        m_fc_2[i] = min(m_fc_2[i],m_fc[i]+k*d_m_fc[i])
+        # t_cdu_2[i] = min(t_cdu_2[i],t_cdu[i]+k*d_t_cdu[i])
+        # t_he_2[i] = min(t_he_2[i],t_he[i]+k*d_t_he[i])
+        # t_ct_2[i] = min(t_ct_2[i],t_ct[i]+k*d_t_ct[i])
         #t_el_2[i] = min(t_el_2[i],t_el[i]+k*d_t_el[i]) #if abs(H['H_el_el'][i]-m_el*t_el[i])/H['H_el_el'][i] >= 0.000001 else t_el_2[i]
     M = {
-        "m_ht"   :[m_ht_1,m_ht_2],
+        # "m_ht"   :[m_ht_1,m_ht_2],
         "m_fc"   :[m_fc_1,m_fc_2],
-        "m_cdu"  :[m_cdu_1,m_cdu_2],
-        "m_he"   :[m_he_1,m_he_2],
-        "m_ct"   :[m_ct_1,m_ct_2],
+        # "m_cdu"  :[m_cdu_1,m_cdu_2],
+        # "m_he"   :[m_he_1,m_he_2],
+        # "m_ct"   :[m_ct_1,m_ct_2],
     }
     T = {
         "t_ht"   :[t_ht_1,t_ht_2],
         "t_fc"   :[t_fc_1,t_fc_2],
-        "t_cdu"  :[t_cdu_1,t_cdu_2],
-        "t_he"   :[t_he_1,t_he_2],
-        "t_ct"   :[t_ct_1,t_ct_2]
+        # "t_cdu"  :[t_cdu_1,t_cdu_2],
+        # "t_he"   :[t_he_1,t_he_2],
+        # "t_ct"   :[t_ct_1,t_ct_2]
     }
     return M,T

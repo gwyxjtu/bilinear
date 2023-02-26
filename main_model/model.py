@@ -2,7 +2,7 @@
 Author: guo_idpc
 Date: 2023-02-23 19:15:43
 LastEditors: guo_idpc 867718012@qq.com
-LastEditTime: 2023-02-24 22:56:49
+LastEditTime: 2023-02-26 20:21:50
 FilePath: /bilinear/main_model/model.py
 Description: 人一生会遇到约2920万人,两个人相爱的概率是0.000049,所以你不爱我,我不怪你.
 
@@ -56,26 +56,27 @@ import time
 import xlrd
 import csv
 import pandas as pd
-from method import piece_McCormick
+from main_model.method import piece_McCormick
 
-from model_load import *
+from main_model.model_load import *
 
 
 
 def opt(M,T,error,fix,res_M_T,H):
     '''
     description: 优化主函数，构造物理模型
+    fix : 2则是直接双线性求解
     return {*}
     '''
     # 系数
-    k_fc = 16
+    k_fc = 18
     k_el = 55
     k_pv = 0.16
     k_hp = 3.4
     k_ghp_g = 4
     k_ghp_q = 5
     eta_fc = 0.9
-    k_pump = 0.6/1000
+    k_pump = 0.6/1000#0.6/1000
 
 
     t_ht_min = 40
@@ -96,15 +97,15 @@ def opt(M,T,error,fix,res_M_T,H):
     # t_he_1,t_he_2   = T['t_he'][0] ,T['t_he'][1]
     period = len(g_demand)
     # 固定设备容量
-    area_pv = 2000#m.addVar(vtype=GRB.CONTINUOUS, lb=0, ub = 2000, name=f"area_pv")
+    area_pv = 50000#m.addVar(vtype=GRB.CONTINUOUS, lb=0, ub = 2000, name=f"area_pv")
     hst = 2000#m.addVar(vtype=GRB.CONTINUOUS, lb=0, ub = 2000, name=f"hst")
 
-    m_ht = 500#m.addVar(vtype=GRB.CONTINUOUS, lb=m_ht_1,ub=m_ht_2, name="m_ht") # capacity of hot water tank
-    m_ct = 500
-    fc_max = 500
-    el_max = 500
-    hp_max = 500
-    ghp_max = 500
+    m_ht = 500000#m.addVar(vtype=GRB.CONTINUOUS, lb=m_ht_1,ub=m_ht_2, name="m_ht") # capacity of hot water tank
+    m_ct = 500000
+    fc_max = 3000
+    el_max = 1000
+    hp_max = 1000
+    ghp_max = 3000
     pump_max = 10000
     # Create a new model    
     m = gp.Model("bilinear")
@@ -124,7 +125,8 @@ def opt(M,T,error,fix,res_M_T,H):
     H_fc_ht = [m.addVar(vtype=GRB.CONTINUOUS,lb=0, name=f"H_fc_ht{t}") for t in range(period)]
     # H_el_el = [m.addVar(vtype=GRB.CONTINUOUS,lb=0, name=f"H_el_el{t}") for t in range(period)]
     # H_el_ht = [m.addVar(vtype=GRB.CONTINUOUS,lb=0, name=f"H_el_ht{t}") for t in range(period)]
-
+    z_fc = [m.addVar(lb=0, ub=1, vtype=GRB.BINARY, name=f"z_fc{t}") for t in range(period)]
+    z_el = [m.addVar(lb=0, ub=1, vtype=GRB.BINARY, name=f"z_el{t}") for t in range(period)]
 
     z_ghpg = [m.addVar(lb=0, ub=1, vtype=GRB.BINARY, name=f"z_ghpg{t}") for t in range(period)]
     z_ghpq = [m.addVar(lb=0, ub=1, vtype=GRB.BINARY, name=f"z_ghpq{t}") for t in range(period)]
@@ -160,7 +162,9 @@ def opt(M,T,error,fix,res_M_T,H):
     p_pur = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_pur{t}") for t in range(period)] # power purchase
     p_sol = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_sol{t}") for t in range(period)] # power purchase 
     p_pump = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_pump{t}") for t in range(period)] # 用于刻画燃料电池换水的电能消耗
-
+    p_pv = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_pv{t}") for t in range(period)] # pv pannel
+    # g_slack = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_slack{t}") for t in range(period)] # 热供应切负荷
+    p_slack = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_slack{t}") for t in range(period)] # 弃掉的电
     # p_co = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_co{t}") for t in range(period)] 
 
     for i in range(int(period/24)-1):
@@ -173,16 +177,16 @@ def opt(M,T,error,fix,res_M_T,H):
     for i in range(period - 1):
         ###m.addConstr(m_ht * (t_ht[i + 1] - t_ht[i]) == m_fc * (t_cdu[i] - t_ht[i]) + m_cdu * (t_cdu[i] - t_ht[i]) - q_ct[i]/c_kWh- g_sol[i]/c_kWh )
         # m.addConstr(H_ht_ht[i+1]-H_ht_ht[i] == H_fc_cdu[i] - H_fc_ht[i]+H_cdu_cdu[i] - H_cdu_ht[i]-q_ct[i]/c_kWh- g_sol[i]/c_kWh)        
-        m.addConstr(c_kWh*m_ht(t_ht[i+1] - t_ht[i]) + g_hp[i] + g_fc[i] + g_ghp[i]== g_demand[i] + water_load[i])
-        m.addConstr(q_hp[i] + q_ghp[i]== c_kWh*m_ct(t_ct[i+1] - t_ct[i]) + q_demand[i])
+        m.addConstr(c_kWh*m_ht*(t_ht[i+1] - t_ht[i]) + g_hp[i] + g_fc[i] + g_ghp[i] == g_demand[i] + water_load[i])#+ g_slack[i]
+        m.addConstr(q_hp[i] + q_ghp[i]== c_kWh*m_ct*(t_ct[i+1] - t_ct[i]) + q_demand[i])
         m.addConstr(h_sto[i+1] - h_sto[i] == h_pur[i] + h_el[i] - h_fc[i])
         
     #m.addConstr(m_ht * (t_ht[0] - t_ht[-1]) == m_fc * (t_cdu[-1] - t_ht[-1]) + m_cdu * (t_cdu[-1] - t_ht[-1]) - q_ct[-1]/c_kWh- g_sol[-1]/c_kWh)
     # m.addConstr(H_ht_ht[0]-H_ht_ht[-1] == H_fc_cdu[-1] - H_fc_ht[-1]+H_cdu_cdu[-1] - H_cdu_ht[-1]-q_ct[-1]/c_kWh- g_sol[-1]/c_kWh)
     #m.addConstr(m_wwt * (t_wwt[0] - t_wwt[i]) == m_cdu* (t_cdu[i] - t_wwt[i]) - q_ct[i]/c_kWh + m_he * (t_he[i] - t_cdu[i]))
     #m.addConstr(m_ht * (t_ht[0] - t_ht[i]) == m_fc * (t_fc[i] - t_ht[i]) + g_eb[i]/c_kWh + m_el * (t_el[i] - t_ht[i]) - m_de[i] * (t_ht[i] - t_de[i]))
-    m.addConstr(c_kWh*m_ht(t_ht[0] - t_ht[-1]) + g_hp[-1] + g_fc[-1] + g_ghp[-1]== g_demand[-1] + water_load[-1])
-    m.addConstr(q_hp[-1] + q_ghp[-1]== c_kWh*m_ct(t_ct[0] - t_ct[-1]) + q_demand[-1])
+    m.addConstr(c_kWh*m_ht*(t_ht[0] - t_ht[-1]) + g_hp[-1] + g_fc[-1] + g_ghp[-1]== g_demand[-1] + water_load[-1])
+    m.addConstr(q_hp[-1] + q_ghp[-1]== c_kWh*m_ct*(t_ct[0] - t_ct[-1]) + q_demand[-1])
     m.addConstr(h_sto[0] - h_sto[-1] == h_pur[-1] + h_el[-1] - h_fc[-1])
     #m.addConstr(t_ht[0] == 60)
     piece_count=0
@@ -191,10 +195,10 @@ def opt(M,T,error,fix,res_M_T,H):
     if fix == 0:
         for i in range(period):
             #print(H_fc_fc[i],m_fc,t_fc[i],m_fc_1,m_fc_2,t_fc_1[i],t_fc_2[i])
-            m,piece_count,int_tmp = piece_McCormick(m,H_fc_fc[i],m_fc,t_fc[i],m_fc_1,m_fc_2,t_fc_1[i],t_fc_2[i],piece_count,error,i,"H_fc_fc",nn)
+            m,piece_count,int_tmp = piece_McCormick(m,H_fc_fc[i],m_fc[i],t_fc[i],m_fc_1[i],m_fc_2[i],t_fc_1[i],t_fc_2[i],piece_count,error,i,"H_fc_fc",nn)
             slack_num+=int_tmp
 
-            m,piece_count,int_tmp = piece_McCormick(m,H_fc_ht[i],m_fc,t_ht[i],m_fc_1,m_fc_2,t_ht_1[i],t_ht_2[i],  piece_count,error,i, "H_fc_ht",  nn)
+            m,piece_count,int_tmp = piece_McCormick(m,H_fc_ht[i],m_fc[i],t_ht[i],m_fc_1[i],m_fc_2[i],t_ht_1[i],t_ht_2[i],  piece_count,error,i, "H_fc_ht",  nn)
             slack_num+=int_tmp  
             # m,piece_count,int_tmp = piece_McCormick(m,H_ht_ht[i],m_ht,t_ht[i],m_ht_1,m_ht_2,t_ht_1[i],t_ht_2[i],  piece_count,error,i, "H_ht_ht",  nn)
             # slack_num+=int_tmp  
@@ -239,8 +243,13 @@ def opt(M,T,error,fix,res_M_T,H):
             # m.addConstr(t_he[i] == H['H_he_he'][i]/res_M_T['m_he'])
             m.addConstr(t_fc[i] == H['H_fc_fc'][i]/res_M_T['m_fc'][i])
             # m.addConstr(t_ct[i] == H['H_ct_ct'][i]/res_M_T['m_ct'])
+    elif fix == 2:
+        for i in range(period):
+            m.addConstr(H_fc_fc[i] ==  m_fc[i]*t_fc[i])
+            m.addConstr(H_fc_ht[i] ==  m_fc[i]*t_ht[i])
 
-    m.addConstr(gp.quicksum(p_pur)<=cer*(sum(ele_load)+sum(q_demand)+sum(g_demand)+sum(water_load)))
+    m.addConstr(gp.quicksum(p_pur)<=(1-cer)*(sum(ele_load)+sum(q_demand)/5+sum(g_demand)/0.9+sum(water_load)/0.9))
+    m.addConstr(gp.quicksum(g_ghp)<=gp.quicksum(q_ghp)+gp.quicksum(p_ghp))
     for i in range(period):
         #m.addConstr(p_pur[i]==0)
 
@@ -251,18 +260,21 @@ def opt(M,T,error,fix,res_M_T,H):
         # m.addConstr(g_demand[i]>=g_sol[i])
 
         # ghp
+        # m.addConstr(g_demand[i]<=M*z_ghpg[i])
+        m.addConstr(g_demand[i]<=100000000*(1-z_ghpq[i]))
         m.addConstr(10000000*z_ghpg[i]>=g_ghp[i])
         m.addConstr(10000000*z_ghpq[i]>=q_ghp[i])
         m.addConstr(z_ghpq[i]+z_ghpg[i]<=1)
-        m.addConstr(g_ghp[i]<=k_ghp_g*p_ghp[i])
-        m.addConstr(q_ghp[i]<=k_ghp_q*p_ghp[i])
+        m.addConstr(p_ghp[i] == g_ghp[i]/k_ghp_g + q_ghp[i]/k_ghp_q)
+        # m.addConstr(g_ghp[i]<=k_ghp_g*p_ghp[i])
+        # m.addConstr(q_ghp[i]<=k_ghp_q*p_ghp[i])
 
         # waste heat pump
-        m.addConstr(p_hp[i] >= k_hp*g_hp[i])
-        m.addConstr(g_hp[i] == q_hp[i]*(1-1/k_hp))
+        m.addConstr(k_hp*p_hp[i] == g_hp[i])
+        m.addConstr(q_hp[i] == g_hp[i]*(1-1/k_hp))
 
-        m.addConstr(p_el[i] + p_sol[i] + p_pump[i] + ele_load[i] == p_pur[i] + p_fc[i] + k_pv*area_pv*r[i])
-        m.addConstr(g_fc[i] <= eta_fc * k_fc * h_fc[i])
+        m.addConstr(p_el[i] + p_sol[i] + p_pump[i] + ele_load[i] + p_slack[i] == p_pur[i] + p_fc[i] + p_pv[i])
+        m.addConstr(g_fc[i] == eta_fc * k_fc * h_fc[i])
         m.addConstr(p_pump[i] == k_pump * m_fc[i])
         m.addConstr(p_fc[i] == k_fc * h_fc[i])#氢燃烧产电
 
@@ -275,11 +287,13 @@ def opt(M,T,error,fix,res_M_T,H):
         #m.addConstr(0.95*g_he[i] == c_kWh * m_idc * (t_idc[i] - t_ht[i]))
         #m.addConstr(p_idcpump[i] == 0.6/1000 * (m_ct*z_ct[i]+m_he*z_he[i]))
 
-        m.addConstr(h_el[i] == k_el * p_el[i])
+        m.addConstr(p_el[i] == k_el * h_el[i])
         #m.addConstr(g_el[i] == 0.2017*p_el[i])
-        ###m.addConstr(g_fc[i] == c_kWh * m_fc * (t_fc[i] - t_ht[i]))
+        # m.addConstr(g_fc[i] == c_kWh * m_fc[i]*(t_fc[i] - t_ht[i]))
         m.addConstr(g_fc[i] == c_kWh *(H_fc_fc[i] - H_fc_ht[i]))
-
+        m.addConstr(100000*z_fc[i] >= p_fc[i])
+        m.addConstr(100000*z_el[i] >= p_el[i])
+        m.addConstr(z_el[i] + z_fc[i] <= 1)
         #m.addConstr(t_el[i] <= 80)
         #m.addConstr(z_fc[i]+z_el[i]<=1)
         m.addConstr(h_sto[i]<=hst)
@@ -287,7 +301,7 @@ def opt(M,T,error,fix,res_M_T,H):
         #m.addConstr(t_ht[i] >= 50)
         
 
-        #m.addConstr(g_demand[i] == c_kWh * m_de[i] * (t_ht[i] - t_de[i]))  
+        #m.addConstr(g_demand[i] == c_kWh * m_de[i] * (t_ht[i] - t_de[i]))
         ###m.addConstr(q_demand[i] == c_kWh * m_cdu * (t_cdu[i] - t_ht[i])-g_fc[i])
         # m.addConstr(q_demand[i] == c_kWh *(H_cdu_cdu[i] - H_cdu_ht[i])-g_fc[i])
         
@@ -298,14 +312,19 @@ def opt(M,T,error,fix,res_M_T,H):
         #m.addConstr(p_idcpump[i]<=idcpump_max)
         #m.addConstr(p_eb[i]<=p_eb_max)
         m.addConstr(p_el[i] <= el_max)
-        m.addConstr(t_fc[i] <=t_ht_min)###
+        m.addConstr(p_ghp[i] <= ghp_max)
+        m.addConstr(p_hp[i] <= hp_max)
+        m.addConstr(t_fc[i] <=t_fc_max)###
         # m.addConstr(t_ht[i] <=65)###
         m.addConstr(t_ht[i] >=t_ht_min)###
+
+
+        m.addConstr(p_pv[i]==k_pv*area_pv*r[i])
         # m.addConstr(t_he[i] >= 30)###
         # m.addConstr(t_cdu[i]<=95)###
         if with_rlt == 1:
-            m.addConstr(H_fc_fc[i]<=t_fc_max*m_fc)
-            m.addConstr(H_fc_ht[i]<=t_ht_min*m_fc)
+            m.addConstr(H_fc_fc[i]<=t_fc_max*m_fc[i])
+            m.addConstr(H_fc_ht[i]>=t_ht_min*m_fc[i])
             # m.addConstr(H_ht_ht[i]<=65*m_ht)
             # m.addConstr(H_cdu_ht[i]<=65*m_cdu)
             # m.addConstr(H_ht_ht[i]>=30*m_ht)
@@ -346,8 +365,8 @@ def opt(M,T,error,fix,res_M_T,H):
         gp.quicksum([p_pur[i]*lambda_ele_in[i] for i in range(period)])*365/days-gp.quicksum(p_sol)*lambda_ele_out*365/days)
     #-gp.quicksum(p_sol)*lambda_ele_out 
     # First optimize() call will fail - need to set NonConvex to 2
-    m.params.NonConvex = 1
-    m.params.MIPGap = 0.05
+    m.params.NonConvex = 2
+    m.params.MIPGap = 0.01
     if nn != 1:
         m.params.MIPGap = 0.05
     # m.optimize()
@@ -365,10 +384,11 @@ def opt(M,T,error,fix,res_M_T,H):
         print("Irreducible inconsistent subsystem is written to file 'model.ilp'")
         return 1,1,1,1,1,1,10000000
     
-    g_ht = [c_kWh*m_ht*(t_ht[i+1]-t_ht[i]) for i in range(period-1)]
-    g_ht.append(c_kWh*m_ht*(t_ht[0]-t_ht[-1]))
-    q_ct = [-c_kWh*m_ct*(t_ct[i+1]-t_ct[i]) for i in range(period-1)]
-    q_ct.append(-c_kWh*m_ct*(t_ct[0]-t_ct[-1]))
+    g_ht = [c_kWh*m_ht*(t_ht[i+1].X-t_ht[i].X) for i in range(period-1)]
+    g_ht.append(c_kWh*m_ht*(t_ht[0].X-t_ht[-1].X))
+    q_ct = [-c_kWh*m_ct*(t_ct[i+1].X-t_ct[i].X) for i in range(period-1)]
+    q_ct.append(-c_kWh*m_ct*(t_ct[0].X-t_ct[-1].X))
+    
     ans = {'objective':m.objVal,
 
             #'m_wwt':m_wwt.X,
@@ -377,8 +397,8 @@ def opt(M,T,error,fix,res_M_T,H):
             
 
 
-            "cer":sum([p_pur[i].X for i in range(period)])/(sum(ele_load)+sum(q_demand)*0.04),
-            'p_pv':[k_pv*area_pv.X*r[i] for i in range(period)],
+            "cer":1-sum([p_pur[i].X for i in range(period)])/(sum(ele_load)+sum(q_demand)/5+sum(g_demand)/0.9+sum(water_load)/0.9),
+            'p_pv':[p_pv[i].x for i in range(period)],
             'p_load':ele_load,
             'p_el':[p_el[i].X for i in range(period)],
             'p_fc':[p_fc[i].X for i in range(period)],
@@ -396,6 +416,7 @@ def opt(M,T,error,fix,res_M_T,H):
             'g_ghp':[g_ghp[i].X for i in range(period)],
             'z_ghpg':[z_ghpg[i].X for i in range(period)],
             'g_ht':[g_ht[i] for i in range(period)],
+            # 'g_slack':[g_slack[i].X for i in range(period)],
 
             'q_load':q_demand,
             'q_hp':[q_hp[i].X for i in range(period)],
@@ -416,7 +437,7 @@ def opt(M,T,error,fix,res_M_T,H):
             't_fc':[t_fc[i].X for i in range(period)],
 
             #'m_cdu':[m_cdu[i].X for i in range(period)],
-            'm_fc':m_fc.x,
+            'm_fc':[m_fc[i].x for i in range(period)],
             'h_el':[h_el[i].X for i in range(period)],
             'h_fc':[h_fc[i].X for i in range(period)],
             'h_sto':[h_sto[i].X for i in range(period)],
@@ -450,7 +471,7 @@ def opt(M,T,error,fix,res_M_T,H):
     res_M_T = {
         # 'm_cdu':m_cdu.x,
         # 'm_he':m_he.x,
-        'm_fc':m_fc.x,
+        'm_fc':[m_fc[i].x for i in range(period)],
         # 'm_ht':m_ht.x,
         # 'm_ct':m_ct.x,
         't_ht':[t_ht[i].X for i in range(period)],
@@ -461,8 +482,8 @@ def opt(M,T,error,fix,res_M_T,H):
     }
     error = {
         # "H_ht_ht"   : [(H_ht_ht[i].X-m_ht.X*t_ht[i].X)/    (m_ht.X*t_ht[i].X  +0.001)  for i in range(period)],
-        "H_fc_fc"   : [(H_fc_fc[i].X-m_fc.X*t_fc[i].X)/    (m_fc.X*t_fc[i].X  +0.001)  for i in range(period)],
-        "H_fc_ht"   : [(H_fc_ht[i].X-m_fc.X*t_ht[i].X)/    (m_fc.X*t_ht[i].X  +0.001)  for i in range(period)],
+        "H_fc_fc"   : [(H_fc_fc[i].X-m_fc[i].X*t_fc[i].X)/    (m_fc[i].X*t_fc[i].X  +0.001)  for i in range(period)],
+        "H_fc_ht"   : [(H_fc_ht[i].X-m_fc[i].X*t_ht[i].X)/    (m_fc[i].X*t_ht[i].X  +0.001)  for i in range(period)],
         # "H_fc_cdu"  : [(H_fc_cdu[i].X-m_fc.X*t_cdu[i].X)/  (m_fc.X*t_cdu[i].X +0.001)  for i in range(period)],
         # "H_cdu_cdu" : [(H_cdu_cdu[i].X-m_cdu.X*t_cdu[i].X)/(m_cdu.X*t_cdu[i].X+0.001)  for i in range(period)],
         # "H_cdu_ht"  : [(H_cdu_ht[i].X-m_cdu.X*t_ht[i].X)/  (m_cdu.X*t_ht[i].X +0.001)  for i in range(period)],
@@ -471,4 +492,9 @@ def opt(M,T,error,fix,res_M_T,H):
         # "H_ct_cdu"  : [(H_ct_cdu[i].X-m_ct.X*t_cdu[i].X)/  (m_ct.X*t_cdu[i].X  +0.001)  for i in range(period)],
         # "H_ct_ct"   : [(H_ct_ct[i].X-m_ct.X*t_ct[i].X)/    (m_ct.X*t_ct[i].X +0.001)  for i in range(period)],
     }
+    print('g_fc:')
+    print(max([g_fc[i].X for i in range(period)]))
+    print('p_fc:')
+    print(max([p_fc[i].X for i in range(period)]))
+    print("-----")
     return M,T,res_M_T,H,error,ans,slack_num
