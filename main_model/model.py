@@ -2,7 +2,7 @@
 Author: guo_idpc
 Date: 2023-02-23 19:15:43
 LastEditors: guo_idpc 867718012@qq.com
-LastEditTime: 2023-02-26 20:21:50
+LastEditTime: 2023-02-27 11:51:53
 FilePath: /bilinear/main_model/model.py
 Description: 人一生会遇到约2920万人,两个人相爱的概率是0.000049,所以你不爱我,我不怪你.
 
@@ -98,7 +98,7 @@ def opt(M,T,error,fix,res_M_T,H):
     period = len(g_demand)
     # 固定设备容量
     area_pv = 50000#m.addVar(vtype=GRB.CONTINUOUS, lb=0, ub = 2000, name=f"area_pv")
-    hst = 2000#m.addVar(vtype=GRB.CONTINUOUS, lb=0, ub = 2000, name=f"hst")
+    hst = 200#m.addVar(vtype=GRB.CONTINUOUS, lb=0, ub = 2000, name=f"hst")
 
     m_ht = 500000#m.addVar(vtype=GRB.CONTINUOUS, lb=m_ht_1,ub=m_ht_2, name="m_ht") # capacity of hot water tank
     m_ct = 500000
@@ -113,9 +113,14 @@ def opt(M,T,error,fix,res_M_T,H):
 
     opex = m.addVar(vtype=GRB.CONTINUOUS, lb=0, name="opex")
     t_ct = [m.addVar(vtype=GRB.CONTINUOUS, lb=4,ub=20, name=f"t_ct{t}") for t in range(period)] # temperature of cold water tank
-    t_ht = [m.addVar(vtype=GRB.CONTINUOUS, lb=t_ht_1[t],ub=t_ht_2[t], name=f"t_ht{t}") for t in range(period)] # temperature of hot water tank
-    m_fc = [m.addVar(vtype=GRB.CONTINUOUS, lb=m_fc_1[t],ub=m_fc_2[t], name=f"m_fc{t}") for t in range(period)] # fuel cells water
-    t_fc = [m.addVar(vtype=GRB.CONTINUOUS, lb=t_fc_1[t],ub=t_fc_2[t], name=f"t_fc{t}") for t in range(period)] # outlet temperature of fuel cells cooling circuits
+    if fix == 1:
+        t_ht = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"t_ht{t}") for t in range(period)] # temperature of hot water tank
+        m_fc = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"m_fc{t}") for t in range(period)] # fuel cells water
+        t_fc = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"t_fc{t}") for t in range(period)] # outlet temperature of fuel cells cooling circuits
+    else:
+        t_ht = [m.addVar(vtype=GRB.CONTINUOUS, lb=t_ht_1[t],ub=t_ht_2[t], name=f"t_ht{t}") for t in range(period)] # temperature of hot water tank
+        m_fc = [m.addVar(vtype=GRB.CONTINUOUS, lb=m_fc_1[t],ub=m_fc_2[t], name=f"m_fc{t}") for t in range(period)] # fuel cells water
+        t_fc = [m.addVar(vtype=GRB.CONTINUOUS, lb=t_fc_1[t],ub=t_fc_2[t], name=f"t_fc{t}") for t in range(period)] # outlet temperature of fuel cells cooling circuits
 
     #m_el = m.addVar(vtype=GRB.CONTINUOUS, lb=m_el_1,ub=m_el_2, name=f"m_el") # fuel cells water
     #t_el = [m.addVar(vtype=GRB.CONTINUOUS, lb=t_el_1[t],ub=t_el_2[t], name=f"t_el{t}") for t in range(period)] # outlet temperature of electrolyzer cooling circuits
@@ -220,16 +225,19 @@ def opt(M,T,error,fix,res_M_T,H):
     elif fix == 1:
         # m.addConstr(m_cdu == res_M_T['m_cdu'])
         # m.addConstr(m_he == res_M_T['m_he'])
-        m.addConstr(m_fc == res_M_T['m_fc'])
+        m.addConstrs(m_fc[i] == res_M_T['m_fc'][i] for i in range(period))
         # m.addConstr(m_ht == res_M_T['m_ht'])
         # m.addConstr(m_ct == res_M_T['m_ct'])
         for i in range(period):
+            # m.addConstr(g_fc[i] == c_kWh * m_fc[i]*(t_fc[i] - t_ht[i]))
+            m.addConstr(H_fc_fc[i] == m_fc[i]*t_fc[i])
+            m.addConstr(H_fc_ht[i] == m_fc[i]*t_ht[i])
             #print(H_fc_fc[i],m_fc,t_fc[i],m_fc_1,m_fc_2,t_fc_1[i],t_fc_2[i])
             #m,piece_count,int_tmp = piece_McCormick(m,H_fc_fc[i],m_fc,t_fc[i],m_fc_1,m_fc_2,t_fc_1[i],t_fc_2[i],piece_count,error,i,"H_fc_fc",nn)
             #slack_num+=int_tmp
             # m.addConstr(H_ht_ht[i] ==  H['H_ht_ht'][i])
-            m.addConstr(H_fc_fc[i] ==  H['H_fc_fc'][i])
-            m.addConstr(H_fc_ht[i] ==  H['H_fc_ht'][i])
+            # m.addConstr(H_fc_fc[i] ==  H['H_fc_fc'][i])
+            # m.addConstr(H_fc_ht[i] ==  H['H_fc_ht'][i])
             # m.addConstr(H_fc_cdu[i] == H['H_fc_cdu'][i])
             # m.addConstr(H_cdu_cdu[i] == H['H_cdu_cdu'][i])
             # m.addConstr(H_cdu_ht[i] == H['H_cdu_ht'][i])
@@ -241,7 +249,7 @@ def opt(M,T,error,fix,res_M_T,H):
             # m.addConstr(t_ht[i] == H['H_ht_ht'][i]/res_M_T['m_ht'])
             # m.addConstr(t_cdu[i] == H['H_cdu_cdu'][i]/res_M_T['m_cdu'])
             # m.addConstr(t_he[i] == H['H_he_he'][i]/res_M_T['m_he'])
-            m.addConstr(t_fc[i] == H['H_fc_fc'][i]/res_M_T['m_fc'][i])
+            m.addConstr(t_fc[i]*res_M_T['m_fc'][i] == H['H_fc_fc'][i])
             # m.addConstr(t_ct[i] == H['H_ct_ct'][i]/res_M_T['m_ct'])
     elif fix == 2:
         for i in range(period):
@@ -365,7 +373,7 @@ def opt(M,T,error,fix,res_M_T,H):
         gp.quicksum([p_pur[i]*lambda_ele_in[i] for i in range(period)])*365/days-gp.quicksum(p_sol)*lambda_ele_out*365/days)
     #-gp.quicksum(p_sol)*lambda_ele_out 
     # First optimize() call will fail - need to set NonConvex to 2
-    m.params.NonConvex = 2
+    m.params.NonConvex = 1
     m.params.MIPGap = 0.01
     if nn != 1:
         m.params.MIPGap = 0.05

@@ -2,7 +2,7 @@
 Author: guo_idpc
 Date: 2023-02-23 17:19:03
 LastEditors: guo_idpc 867718012@qq.com
-LastEditTime: 2023-02-26 21:38:57
+LastEditTime: 2023-02-26 22:05:45
 FilePath: /bilinear/main_blp.py
 Description: 人一生会遇到约2920万人,两个人相爱的概率是0.000049,所以你不爱我,我不怪你.
 
@@ -32,7 +32,10 @@ def plot_for_test(error_max,error_min,obj_print,res):
     plt.plot(y,obj_print)
     plt.savefig('img/obj.png')
     plt.close()
-    
+    z = [i for i in range(len(res['t_ht']))]
+    plt.plot(z,res['t_ht'])
+    plt.savefig('img/t_ht.png')
+    plt.close()
     # exit(0)
 
 if __name__ == '__main__':
@@ -107,14 +110,15 @@ if __name__ == '__main__':
     #all(error[i]>=0.005 for i in range(len(error)))
     res = ans
     obj_print=[]
+    M_l,T_l = M,T
     while max(errorl)>gap or min(errorl)<-gap:
 
         error_last,res_last = error,ans
         M,T,res_M_T,H,error,res,slack_num = opt(M,T,error,0,res_M_T,H)
 
         if slack_num == 10000000:
-            pd.DataFrame(res_last).to_csv("test.csv")
-            pd.DataFrame(error_last).to_csv("error.csv")
+            pd.DataFrame(res_last).to_csv("res_for_test/test.csv")
+            pd.DataFrame(error_last).to_csv("res_for_test/error.csv")
             # to_csv(res_last,"test")
             # to_csv(error_last,"error")
             print("g")
@@ -122,6 +126,7 @@ if __name__ == '__main__':
         # if obj == 404:
         #     break
         #res = res_new
+        M_l,T_l = M,T
         M,T = bound_con(period,H,gap,M,T,res_M_T,n,0.8)
         #print(t_el_1,t_el_2)
         obj_print.append(res['objective'])
@@ -131,7 +136,7 @@ if __name__ == '__main__':
         mean_err.append(np.mean(errorl))
         slack_num_list.append(slack_num)
         if max(errorl)>0.7:
-            pd.DataFrame(error).to_csv("errorbig.csv")
+            pd.DataFrame(error).to_csv("res_for_test/errorbig.csv")
             # to_csv(error,"errorbig")
             #input()
         print(max_err)
@@ -146,18 +151,17 @@ if __name__ == '__main__':
 
 
     # #计算一次fix后的可行解
-    # M,T,res_M_T,H,error,res,slack_num = opt(M,T,error,1,res_M_T,H)
-    # #obj_print.append(res['objective'])
-    # errorl = [abs(ee[i]) for ee in error.values() for i in range(len(ee))]
-    # #error = [abs(error[i])for i in range(len(error))]
-    # max_err.append(max(errorl))
-    # mean_err.append(np.mean(errorl))
-    # obj_print.append(res['objective'])
-    # print(obj_print)
-    # print(max_err)
-    # print(mean_err)
-    pd.DataFrame(res).to_csv("test.csv")
-    pd.DataFrame(error).to_csv("error.csv")
+    M,T,res_M_T,H,error,res,slack_num = opt(M_l,T_l,error,1,res_M_T,H)
+    errorl = [abs(ee[i]) for ee in error.values() for i in range(len(ee))]
+    #error = [abs(error[i])for i in range(len(error))]
+    max_err.append(max(errorl))
+    mean_err.append(np.mean(errorl))
+    obj_print.append(res['objective'])
+    print(obj_print)
+    print(max_err)
+    print(mean_err)
+    pd.DataFrame(res).to_csv("res_for_test/test.csv")
+    pd.DataFrame(error).to_csv("res_for_test/error.csv")
     # to_csv(error,"error")
 
     plot_for_test(max_err,mean_err,obj_print,res)
