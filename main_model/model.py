@@ -2,7 +2,7 @@
 Author: guo_idpc
 Date: 2023-02-23 19:15:43
 LastEditors: guo_idpc 867718012@qq.com
-LastEditTime: 2023-02-27 11:51:53
+LastEditTime: 2023-02-27 16:57:49
 FilePath: /bilinear/main_model/model.py
 Description: 人一生会遇到约2920万人,两个人相爱的概率是0.000049,所以你不爱我,我不怪你.
 
@@ -168,7 +168,8 @@ def opt(M,T,error,fix,res_M_T,H):
     p_sol = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_sol{t}") for t in range(period)] # power purchase 
     p_pump = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_pump{t}") for t in range(period)] # 用于刻画燃料电池换水的电能消耗
     p_pv = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_pv{t}") for t in range(period)] # pv pannel
-    # g_slack = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_slack{t}") for t in range(period)] # 热供应切负荷
+    g_slack = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_slack{t}") for t in range(period)] # 弃掉的热
+    q_slack = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"q_slack{t}") for t in range(period)] # 弃掉的冷
     p_slack = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_slack{t}") for t in range(period)] # 弃掉的电
     # p_co = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_co{t}") for t in range(period)] 
 
@@ -182,16 +183,16 @@ def opt(M,T,error,fix,res_M_T,H):
     for i in range(period - 1):
         ###m.addConstr(m_ht * (t_ht[i + 1] - t_ht[i]) == m_fc * (t_cdu[i] - t_ht[i]) + m_cdu * (t_cdu[i] - t_ht[i]) - q_ct[i]/c_kWh- g_sol[i]/c_kWh )
         # m.addConstr(H_ht_ht[i+1]-H_ht_ht[i] == H_fc_cdu[i] - H_fc_ht[i]+H_cdu_cdu[i] - H_cdu_ht[i]-q_ct[i]/c_kWh- g_sol[i]/c_kWh)        
-        m.addConstr(c_kWh*m_ht*(t_ht[i+1] - t_ht[i]) + g_hp[i] + g_fc[i] + g_ghp[i] == g_demand[i] + water_load[i])#+ g_slack[i]
-        m.addConstr(q_hp[i] + q_ghp[i]== c_kWh*m_ct*(t_ct[i+1] - t_ct[i]) + q_demand[i])
+        m.addConstr(c_kWh*m_ht*(t_ht[i+1] - t_ht[i]) + g_hp[i] + g_fc[i] + g_ghp[i] + g_slack[i]== g_demand[i] + water_load[i])#+ g_slack[i]
+        m.addConstr(q_hp[i] + q_ghp[i] + q_slack[i] == c_kWh*m_ct*(t_ct[i+1] - t_ct[i]) + q_demand[i])
         m.addConstr(h_sto[i+1] - h_sto[i] == h_pur[i] + h_el[i] - h_fc[i])
         
     #m.addConstr(m_ht * (t_ht[0] - t_ht[-1]) == m_fc * (t_cdu[-1] - t_ht[-1]) + m_cdu * (t_cdu[-1] - t_ht[-1]) - q_ct[-1]/c_kWh- g_sol[-1]/c_kWh)
     # m.addConstr(H_ht_ht[0]-H_ht_ht[-1] == H_fc_cdu[-1] - H_fc_ht[-1]+H_cdu_cdu[-1] - H_cdu_ht[-1]-q_ct[-1]/c_kWh- g_sol[-1]/c_kWh)
     #m.addConstr(m_wwt * (t_wwt[0] - t_wwt[i]) == m_cdu* (t_cdu[i] - t_wwt[i]) - q_ct[i]/c_kWh + m_he * (t_he[i] - t_cdu[i]))
     #m.addConstr(m_ht * (t_ht[0] - t_ht[i]) == m_fc * (t_fc[i] - t_ht[i]) + g_eb[i]/c_kWh + m_el * (t_el[i] - t_ht[i]) - m_de[i] * (t_ht[i] - t_de[i]))
-    m.addConstr(c_kWh*m_ht*(t_ht[0] - t_ht[-1]) + g_hp[-1] + g_fc[-1] + g_ghp[-1]== g_demand[-1] + water_load[-1])
-    m.addConstr(q_hp[-1] + q_ghp[-1]== c_kWh*m_ct*(t_ct[0] - t_ct[-1]) + q_demand[-1])
+    m.addConstr(c_kWh*m_ht*(t_ht[0] - t_ht[-1]) + g_hp[-1] + g_fc[-1] + g_ghp[-1] +g_slack[-1]== g_demand[-1] + water_load[-1])
+    m.addConstr(q_hp[-1] + q_ghp[-1] +q_slack[-1]== c_kWh*m_ct*(t_ct[0] - t_ct[-1]) + q_demand[-1])
     m.addConstr(h_sto[0] - h_sto[-1] == h_pur[-1] + h_el[-1] - h_fc[-1])
     #m.addConstr(t_ht[0] == 60)
     piece_count=0
@@ -376,7 +377,7 @@ def opt(M,T,error,fix,res_M_T,H):
     m.params.NonConvex = 1
     m.params.MIPGap = 0.01
     if nn != 1:
-        m.params.MIPGap = 0.05
+        m.params.MIPGap = 0.02
     # m.optimize()
     #m.computeIIS()
     try:

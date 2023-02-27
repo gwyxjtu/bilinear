@@ -2,7 +2,7 @@
 Author: guo_idpc
 Date: 2023-02-23 19:34:32
 LastEditors: guo_idpc 867718012@qq.com
-LastEditTime: 2023-02-26 11:21:33
+LastEditTime: 2023-02-27 17:01:39
 FilePath: /bilinear/main_model/method.py
 Description: 人一生会遇到约2920万人,两个人相爱的概率是0.000049,所以你不爱我,我不怪你.
 
@@ -39,7 +39,7 @@ import random
 import time
 import xlrd
 import csv
-ggggap=0.02  #不用分片线性的gap
+ggggap=0.00001  #不用分片线性的gap
 gap=0.01  #最终的终止条件gap
 def McCormick(model,H,x,y,x1,x2,y1,y2,piece_count,n):
     

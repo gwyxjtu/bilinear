@@ -2,7 +2,7 @@
 Author: guo_idpc
 Date: 2023-02-23 17:19:03
 LastEditors: guo_idpc 867718012@qq.com
-LastEditTime: 2023-02-26 22:05:45
+LastEditTime: 2023-02-27 14:57:20
 FilePath: /bilinear/main_blp.py
 Description: 人一生会遇到约2920万人,两个人相爱的概率是0.000049,所以你不爱我,我不怪你.
 
@@ -11,7 +11,7 @@ Copyright (c) 2023 by ${git_name_email}, All Rights Reserved.
 from main_model.model import *
 from main_model.method import *
 
-def plot_for_test(error_max,error_min,obj_print,res):
+def plot_for_test(error_max,error_min,obj_print,slack_num_list,res):
     '''
     description: error放在一个图里面，obj单独一个图
     return {*}
@@ -35,6 +35,10 @@ def plot_for_test(error_max,error_min,obj_print,res):
     z = [i for i in range(len(res['t_ht']))]
     plt.plot(z,res['t_ht'])
     plt.savefig('img/t_ht.png')
+    plt.close()
+    xx = [i for i in range(len(slack_num_list))]
+    plt.plot(xx,slack_num_list)
+    plt.savefig('img/slack_num.png')
     plt.close()
     # exit(0)
 
@@ -164,6 +168,6 @@ if __name__ == '__main__':
     pd.DataFrame(error).to_csv("res_for_test/error.csv")
     # to_csv(error,"error")
 
-    plot_for_test(max_err,mean_err,obj_print,res)
+    plot_for_test(max_err,mean_err,obj_print,slack_num_list,res)
     end=time.time()
     print('Running time: %s Seconds'%(end-start))
