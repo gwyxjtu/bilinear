@@ -2,7 +2,7 @@
 Author: guo_idpc
 Date: 2023-02-23 19:15:43
 LastEditors: guo_idpc 867718012@qq.com
-LastEditTime: 2023-03-01 21:13:10
+LastEditTime: 2023-03-01 21:52:53
 FilePath: /bilinear/main_model/model.py
 Description: 人一生会遇到约2920万人,两个人相爱的概率是0.000049,所以你不爱我,我不怪你.
 
@@ -669,7 +669,7 @@ def opt(M,T,error,fix,res_M_T,H):
             'q_ghp':[q_ghp[i].X for i in range(period)],
             'z_gphq':[z_ghpq[i].X for i in range(period)],
 
-
+            'H_fc_mp':[H_fc_mp[i].X for i in range(period)],
             # 'q_ct':[q_ct[i].X for i in range(period)],
             # 'z_fc':[z_fc[i].X for i in range(period)],
             # #'g_he':[g_he[i].X for i in range(period)],
@@ -793,24 +793,24 @@ def opt(M,T,error,fix,res_M_T,H):
     error = {
         # "H_ht_ht"   : [(H_ht_ht[i].X-m_ht.X*t_ht[i].X)/    (m_ht.X*t_ht[i].X  +0.001)  for i in range(period)],
         "H_fc_fc"   : [(H_fc_fc[i].X-m_fc[i].X*t_fc[i].X)/    (m_fc[i].X*t_fc[i].X  +0.001)  for i in range(period)],
-        "H_fc_mp"   : [(H_fc_mp[i].X-m_fc[i].X*t_g_mp[i].X)/    (m_fc[i].X*t_g_mp[i].X  +0.001)  for i in range(period)],
+        "H_fc_mp"   : [(H_fc_mp[i].X-m_fc[i].X*t_g_mp_r[i].X)/    (m_fc[i].X*t_g_mp_r[i].X  +0.001)  for i in range(period)],
         'H_ht_ht'   : [(H_ht_ht[i].X-m_ht[i].X*t_ht[i].X)/    (m_ht[i].X*t_ht[i].X  +0.001)  for i in range(period)],
-        'H_ht_mp'   : [(H_ht_mp[i].X-m_ht[i].X*t_g_mp[i].X)/    (m_ht[i].X*t_g_mp[i].X  +0.001)  for i in range(period)],
+        'H_ht_mp'   : [(H_ht_mp[i].X-m_ht[i].X*t_g_mp_r[i].X)/    (m_ht[i].X*t_g_mp_r[i].X  +0.001)  for i in range(period)],
         'H_g_hp_hp' : [(H_g_hp_hp[i].X-m_g_hp[i].X*t_g_hp[i].X)/    (m_g_hp[i].X*t_g_hp[i].X  +0.001)  for i in range(period)],
-        'H_g_hp_mp' : [(H_g_hp_mp[i].X-m_g_hp[i].X*t_g_mp[i].X)/    (m_g_hp[i].X*t_g_mp[i].X  +0.001)  for i in range(period)],
+        'H_g_hp_mp' : [(H_g_hp_mp[i].X-m_g_hp[i].X*t_g_mp_r[i].X)/    (m_g_hp[i].X*t_g_mp_r[i].X  +0.001)  for i in range(period)],
         'H_g_ghp_ghp':[(H_g_ghp_ghp[i].X-m_g_ghp[i].X*t_g_ghp[i].X)/    (m_g_ghp[i].X*t_g_ghp[i].X  +0.001)  for i in range(period)],
-        'H_g_ghp_mp':[(H_g_ghp_mp[i].X-m_g_ghp[i].X*t_g_mp[i].X)/    (m_g_ghp[i].X*t_g_mp[i].X  +0.001)  for i in range(period)],
+        'H_g_ghp_mp':[(H_g_ghp_mp[i].X-m_g_ghp[i].X*t_g_mp_r[i].X)/    (m_g_ghp[i].X*t_g_mp_r[i].X  +0.001)  for i in range(period)],
         'H_g_mp_mp' : [(H_g_mp_mp[i].X-m_g_mp[i].X*t_g_mp[i].X)/    (m_g_mp[i].X*t_g_mp[i].X  +0.001)  for i in range(period)],
         'H_g_mp_mp_r':[(H_g_mp_mp_r[i].X-m_g_mp[i].X*t_g_mp_r[i].X)/    (m_g_mp[i].X*t_g_mp_r[i].X  +0.001)  for i in range(period)],
 
         'H_q_hp_hp' : [(H_q_hp_hp[i].X-m_q_hp[i].X*t_q_hp[i].X)/    (m_q_hp[i].X*t_q_hp[i].X  +0.001)  for i in range(period)],
-        'H_q_hp_mp' : [(H_q_hp_mp[i].X-m_q_hp[i].X*t_q_mp[i].X)/    (m_q_hp[i].X*t_q_mp[i].X  +0.001)  for i in range(period)],
+        'H_q_hp_mp' : [(H_q_hp_mp[i].X-m_q_hp[i].X*t_q_mp_r[i].X)/    (m_q_hp[i].X*t_q_mp_r[i].X  +0.001)  for i in range(period)],
         'H_q_ghp_ghp':[(H_q_ghp_ghp[i].X-m_q_ghp[i].X*t_q_ghp[i].X)/    (m_q_ghp[i].X*t_q_ghp[i].X  +0.001)  for i in range(period)],
-        'H_q_ghp_mp':[(H_q_ghp_mp[i].X-m_q_ghp[i].X*t_q_mp[i].X)/    (m_q_ghp[i].X*t_q_mp[i].X  +0.001)  for i in range(period)],
+        'H_q_ghp_mp':[(H_q_ghp_mp[i].X-m_q_ghp[i].X*t_q_mp_r[i].X)/    (m_q_ghp[i].X*t_q_mp_r[i].X  +0.001)  for i in range(period)],
         'H_q_mp_mp' : [(H_q_mp_mp[i].X-m_q_mp[i].X*t_q_mp[i].X)/    (m_q_mp[i].X*t_q_mp[i].X  +0.001)  for i in range(period)],
         'H_q_mp_mp_r':[(H_q_mp_mp_r[i].X-m_q_mp[i].X*t_q_mp_r[i].X)/    (m_q_mp[i].X*t_q_mp_r[i].X  +0.001)  for i in range(period)],
         'H_ct_ct'   : [(H_ct_ct[i].X-m_ct[i].X*t_ct[i].X)/    (m_ct[i].X*t_ct[i].X  +0.001)  for i in range(period)],
-        'H_ct_mp'   : [(H_ct_mp[i].X-m_ct[i].X*t_q_mp[i].X)/    (m_ct[i].X*t_q_mp[i].X  +0.001)  for i in range(period)],
+        'H_ct_mp'   : [(H_ct_mp[i].X-m_ct[i].X*t_q_mp_r[i].X)/    (m_ct[i].X*t_q_mp_r[i].X  +0.001)  for i in range(period)],
 
     }
     print('g_fc:')
