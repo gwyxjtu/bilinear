@@ -11,8 +11,8 @@ Copyright (c) 2023 by ${git_name_email}, All Rights Reserved.
 import pandas as pd
 import csv
 cer = 0.1
-days=4
-nn = 2
+days=1
+nn = 1
 with_rlt = 1
 
 bilinear = 1

@@ -1,0 +1,25 @@
+\ Model bilinear_copy
+\ LP format - for model browsing. Use MPS format to capture full model detail.
+Minimize
+ 
+Subject To
+ R143: m_fc23 = 2107.259434660087
+ R167: m_g_hp23 = 5174.42689109888
+ R191: m_g_ghp23 = 3959.359451925722
+ R239: m_g_mp23 = 11241.04577768469
+ R2336: - H_fc_fc23 - H_ht_ht23 - H_g_hp_hp23 - H_g_ghp_ghp23 + H_g_mp_mp23
+   = 0
+ R2341: - 40 m_fc23 + H_fc_fc23 >= 0
+ R2345: - 30.79584042712315 m_g_hp23 + H_g_hp_hp23 >= 0
+ R2349: - 30.52199790257708 m_g_ghp23 + H_g_ghp_ghp23 >= 0
+ R2358: - 32.2929446350262 m_g_mp23 + H_g_mp_mp23 <= 0
+Bounds
+ m_fc23 free
+ m_g_hp23 free
+ m_g_ghp23 free
+ m_g_mp23 free
+ H_fc_fc23 free
+ H_g_hp_hp23 free
+ H_g_ghp_ghp23 free
+ H_g_mp_mp23 free
+End
