@@ -2,7 +2,7 @@
 Author: guo_idpc
 Date: 2023-02-23 19:15:43
 LastEditors: guo_idpc 867718012@qq.com
-LastEditTime: 2023-02-28 16:06:11
+LastEditTime: 2023-03-01 21:13:10
 FilePath: /bilinear/main_model/model.py
 Description: 人一生会遇到约2920万人,两个人相爱的概率是0.000049,所以你不爱我,我不怪你.
 
@@ -79,8 +79,30 @@ def opt(M,T,error,fix,res_M_T,H):
     k_pump = 0.6/1000#0.6/1000
 
 
-    t_ht_min = 40
+    t_ht_min = 30
+    t_ht_max = 80
+    t_fc_min = 40
     t_fc_max = 65
+    t_g_hp_min = 30
+    t_g_hp_max = 65
+    t_g_ghp_min = 30
+    t_g_ghp_max = 60
+    t_g_mp_min = 30
+    t_g_mp_max = 80
+    t_g_mp_r_min = 20
+    t_g_mp_r_max = 80
+    t_ct_min = 5
+    t_ct_max = 20
+
+    t_q_hp_min = 5
+    t_q_hp_max = 20
+    t_q_ghp_min = 5
+    t_q_ghp_max = 20
+    t_q_mp_min = 5
+    t_q_mp_max = 20
+    t_q_mp_r_min = 5
+    t_q_mp_r_max = 30
+
     c = 4200 # J/kg*C
     c_kWh = 4200/3.6/1000000
     delta_T = 12
@@ -134,12 +156,12 @@ def opt(M,T,error,fix,res_M_T,H):
     if fix == 1:
         
         m_fc = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"m_fc{t}") for t in range(period)] # fuel cells water
-        m_ht = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"m_ht{t}") for t in range(period)] # hot water tank mass flow 
+        m_ht = [m.addVar(vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY, name=f"m_ht{t}") for t in range(period)] # hot water tank mass flow 
         m_g_hp = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"m_g_hp{t}") for t in range(period)] # waste heat pump heat sullpy mass flow 
         m_g_ghp = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"m_g_ghp{t}") for t in range(period)] # ground heat pump heat sullpy mass flow
         m_g_mp = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"m_g_mp{t}") for t in range(period)] # heat sullpy main pipe mass flow
 
-        m_ct = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"m_ct{t}") for t in range(period)] # cold water tank mass flow
+        m_ct = [m.addVar(vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY, name=f"m_ct{t}") for t in range(period)] # cold water tank mass flow
         m_q_hp = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"m_q_hp{t}") for t in range(period)] # waste heat pump cooling supply mass flow
         m_q_ghp = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"m_q_ghp{t}") for t in range(period)] # ground heat pump cooling supply mass flow
         m_q_mp = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"m_q_mp{t}") for t in range(period)] # cooling supply main pipe mass flow
@@ -229,7 +251,8 @@ def opt(M,T,error,fix,res_M_T,H):
     p_fc = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_fc{t}") for t in range(period)]
     h_fc = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"h_fc{t}") for t in range(period)] # hydrogen used in fuel cells
 
-
+    g_ht = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_ht{t}") for t in range(period)]
+    q_ct = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"q_ct{t}") for t in range(period)]
     # t_de = [m.addVar(vtype=GRB.CONTINUOUS, lb=0,name=f"t_de{t}") for t in range(period)] # outlet temparature of heat supply circuits
     # p_eb = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_eb{t}") for t in range(period)]
     # g_eb = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_eb{t}") for t in range(period)]
@@ -259,18 +282,17 @@ def opt(M,T,error,fix,res_M_T,H):
     for i in range(period - 1):
         ###m.addConstr(m_ht * (t_ht[i + 1] - t_ht[i]) == m_fc * (t_cdu[i] - t_ht[i]) + m_cdu * (t_cdu[i] - t_ht[i]) - q_ct[i]/c_kWh- g_sol[i]/c_kWh )
         # m.addConstr(H_ht_ht[i+1]-H_ht_ht[i] == H_fc_cdu[i] - H_fc_ht[i]+H_cdu_cdu[i] - H_cdu_ht[i]-q_ct[i]/c_kWh- g_sol[i]/c_kWh)        
-        m.addConstr(c_kWh*m_ht*(t_ht[i+1] - t_ht[i]) + g_hp[i] + g_fc[i] + g_ghp[i] + g_slack[i]== g_demand[i] + water_load[i])#+ g_slack[i]
-        m.addConstr(q_hp[i] + q_ghp[i] + q_slack[i] == c_kWh*m_ct*(t_ct[i+1] - t_ct[i]) + q_demand[i])
+        m.addConstr(g_ht[i] + g_hp[i] + g_fc[i] + g_ghp[i] + g_slack[i]== g_demand[i] + water_load[i])#+ g_slack[i]
+        m.addConstr(g_ht[i] == c_kWh*M_ht*(t_ht[i+1] - t_ht[i]))
+        m.addConstr(q_ct[i] + q_hp[i] + q_ghp[i] + q_slack[i] == q_demand[i])
+        m.addConstr(q_ct[i] == c_kWh*M_ct*(t_ct[i] - t_ct[i+1]))
         m.addConstr(h_sto[i+1] - h_sto[i] == h_pur[i] + h_el[i] - h_fc[i])
         
-    #m.addConstr(m_ht * (t_ht[0] - t_ht[-1]) == m_fc * (t_cdu[-1] - t_ht[-1]) + m_cdu * (t_cdu[-1] - t_ht[-1]) - q_ct[-1]/c_kWh- g_sol[-1]/c_kWh)
-    # m.addConstr(H_ht_ht[0]-H_ht_ht[-1] == H_fc_cdu[-1] - H_fc_ht[-1]+H_cdu_cdu[-1] - H_cdu_ht[-1]-q_ct[-1]/c_kWh- g_sol[-1]/c_kWh)
-    #m.addConstr(m_wwt * (t_wwt[0] - t_wwt[i]) == m_cdu* (t_cdu[i] - t_wwt[i]) - q_ct[i]/c_kWh + m_he * (t_he[i] - t_cdu[i]))
-    #m.addConstr(m_ht * (t_ht[0] - t_ht[i]) == m_fc * (t_fc[i] - t_ht[i]) + g_eb[i]/c_kWh + m_el * (t_el[i] - t_ht[i]) - m_de[i] * (t_ht[i] - t_de[i]))
-    m.addConstr(c_kWh*m_ht*(t_ht[0] - t_ht[-1]) + g_hp[-1] + g_fc[-1] + g_ghp[-1] +g_slack[-1]== g_demand[-1] + water_load[-1])
-    m.addConstr(q_hp[-1] + q_ghp[-1] +q_slack[-1]== c_kWh*m_ct*(t_ct[0] - t_ct[-1]) + q_demand[-1])
+    m.addConstr(g_ht[-1] + g_hp[-1] + g_fc[-1] + g_ghp[-1] +g_slack[-1]== g_demand[-1] + water_load[-1])
+    m.addConstr(g_ht[-1] == c_kWh*M_ht*(t_ht[0] - t_ht[-1]))
+    m.addConstr(q_ct[-1] + q_hp[-1] + q_ghp[-1] +q_slack[-1]== q_demand[-1])
+    m.addConstr(q_ct[-1] == c_kWh*M_ct*(t_ct[-1] - t_ct[0]))
     m.addConstr(h_sto[0] - h_sto[-1] == h_pur[-1] + h_el[-1] - h_fc[-1])
-    #m.addConstr(t_ht[0] == 60)
     piece_count=0
     slack_num=0
     #piece_McCormick(model,H,x,y,x1,x2,y1,y2,piece_count,error,i_number,H_name,n)
@@ -326,7 +348,7 @@ def opt(M,T,error,fix,res_M_T,H):
             m,piece_count,int_tmp = piece_McCormick(m,H_q_ghp_mp[i],m_q_ghp[i],t_q_mp_r[i],m_q_ghp_1[i],m_q_ghp_2[i],t_q_mp_r_1[i],t_q_mp_r_2[i],piece_count,error,i,"H_q_ghp_mp",nn)
             slack_num+=int_tmp
 
-            m,piece_count,int_tmp = piece_McCormick(m,H_q_mp_mp[i],m_q_mp[i],t_q_mp_r[i],m_q_mp_1[i],m_q_mp_2[i],t_q_mp_1[i],t_q_mp_2[i],piece_count,error,i,"H_q_mp_mp",nn)
+            m,piece_count,int_tmp = piece_McCormick(m,H_q_mp_mp[i],m_q_mp[i],t_q_mp[i],m_q_mp_1[i],m_q_mp_2[i],t_q_mp_1[i],t_q_mp_2[i],piece_count,error,i,"H_q_mp_mp",nn)
             slack_num+=int_tmp
 
             m,piece_count,int_tmp = piece_McCormick(m,H_q_mp_mp_r[i],m_q_mp[i],t_q_mp_r[i],m_q_mp_1[i],m_q_mp_2[i],t_q_mp_r_1[i],t_q_mp_r_2[i],piece_count,error,i,"H_q_mp_mp_r",nn)
@@ -379,16 +401,16 @@ def opt(M,T,error,fix,res_M_T,H):
 
 
             m.addConstr(t_fc[i]*res_M_T['m_fc'][i] == H['H_fc_fc'][i])
-            m.addConstr(t_g_mp_r[i]*res_M_T['m_fc'][i] == H['H_fc_mp'][i])
+            # m.addConstr(t_g_mp_r[i]*res_M_T['m_fc'][i] == H['H_fc_mp'][i])
 
             m.addConstr(t_ht[i]*res_M_T['m_ht'][i] == H['H_ht_ht'][i])
-            m.addConstr(t_g_mp_r[i]*res_M_T['m_ht'][i] == H['H_ht_mp'][i])
+            # m.addConstr(t_g_mp_r[i]*res_M_T['m_ht'][i] == H['H_ht_mp'][i])
 
             m.addConstr(t_g_hp[i]*res_M_T['m_g_hp'][i] == H['H_g_hp_hp'][i])
-            m.addConstr(t_g_mp_r[i]*res_M_T['m_g_hp'][i] == H['H_g_hp_mp'][i])
+            # m.addConstr(t_g_mp_r[i]*res_M_T['m_g_hp'][i] == H['H_g_hp_mp'][i])
 
             m.addConstr(t_g_ghp[i]*res_M_T['m_g_ghp'][i] == H['H_g_ghp_ghp'][i])
-            m.addConstr(t_g_mp_r[i]*res_M_T['m_g_ghp'][i] == H['H_g_ghp_mp'][i])
+            # m.addConstr(t_g_mp_r[i]*res_M_T['m_g_ghp'][i] == H['H_g_ghp_mp'][i])
 
             m.addConstr(t_g_mp[i]*res_M_T['m_g_mp'][i] == H['H_g_mp_mp'][i])
             m.addConstr(t_g_mp_r[i]*res_M_T['m_g_mp'][i] == H['H_g_mp_mp_r'][i])
@@ -396,22 +418,44 @@ def opt(M,T,error,fix,res_M_T,H):
 
             # cooling
             m.addConstr(t_ct[i]*res_M_T['m_ct'][i] == H['H_ct_ct'][i])
-            m.addConstr(t_q_mp_r[i]*res_M_T['m_ct'][i] == H['H_ct_mp'][i])
+            # m.addConstr(t_q_mp_r[i]*res_M_T['m_ct'][i] == H['H_ct_mp'][i])
 
             m.addConstr(t_q_hp[i]*res_M_T['m_q_hp'][i] == H['H_q_hp_hp'][i])
-            m.addConstr(t_q_mp_r[i]*res_M_T['m_q_hp'][i] == H['H_q_hp_mp'][i])
+            # m.addConstr(t_q_mp_r[i]*res_M_T['m_q_hp'][i] == H['H_q_hp_mp'][i])
 
             m.addConstr(t_q_ghp[i]*res_M_T['m_q_ghp'][i] == H['H_q_ghp_ghp'][i])
-            m.addConstr(t_q_mp_r[i]*res_M_T['m_q_ghp'][i] == H['H_q_ghp_mp'][i])
+            # m.addConstr(t_q_mp_r[i]*res_M_T['m_q_ghp'][i] == H['H_q_ghp_mp'][i])
 
             m.addConstr(t_q_mp[i]*res_M_T['m_q_mp'][i] == H['H_q_mp_mp'][i])
             m.addConstr(t_q_mp_r[i]*res_M_T['m_q_mp'][i] == H['H_q_mp_mp_r'][i])
             
+    elif fix == 2:
+        # 直接双线性
+        for i in range(period):
+            m.addConstr(H_fc_fc[i] == m_fc[i]*t_fc[i])
+            m.addConstr(H_fc_mp[i] == m_fc[i]*t_g_mp_r[i])
+            m.addConstr(H_ht_ht[i] == m_ht[i]*t_ht[i])
+            m.addConstr(H_ht_mp[i] == m_ht[i]*t_g_mp_r[i])
+            m.addConstr(H_g_hp_hp[i] == m_g_hp[i]*t_g_hp[i])
+            m.addConstr(H_g_hp_mp[i] == m_g_hp[i]*t_g_mp_r[i])
+            m.addConstr(H_g_ghp_ghp[i] == m_g_ghp[i]*t_g_ghp[i])
+            m.addConstr(H_g_ghp_mp[i] == m_g_ghp[i]*t_g_mp_r[i])
+            m.addConstr(H_g_mp_mp[i] == m_g_mp[i]*t_g_mp[i])
+            m.addConstr(H_g_mp_mp_r[i] == m_g_mp[i]*t_g_mp_r[i])
+
+            m.addConstr(H_ct_ct[i] == m_ct[i]*t_ct[i])
+            m.addConstr(H_ct_mp[i] == m_ct[i]*t_q_mp_r[i])
+            m.addConstr(H_q_hp_hp[i] == m_q_hp[i]*t_q_hp[i])
+            m.addConstr(H_q_hp_mp[i] == m_q_hp[i]*t_q_mp_r[i])
+            m.addConstr(H_q_ghp_ghp[i] == m_q_ghp[i]*t_q_ghp[i])
+            m.addConstr(H_q_ghp_mp[i] == m_q_ghp[i]*t_q_mp_r[i])
+            m.addConstr(H_q_mp_mp[i] == m_q_mp[i]*t_q_mp[i])
+            m.addConstr(H_q_mp_mp_r[i] == m_q_mp[i]*t_q_mp_r[i])
 
 
 
     m.addConstr(gp.quicksum(p_pur)<=(1-cer)*(sum(ele_load)+sum(q_demand)/5+sum(g_demand)/0.9+sum(water_load)/0.9))
-    m.addConstr(gp.quicksum(g_ghp)<=gp.quicksum(q_ghp)+gp.quicksum(p_ghp))
+    # m.addConstr(gp.quicksum(g_ghp)<=gp.quicksum(q_ghp)+gp.quicksum(p_ghp))
     for i in range(period):
         #m.addConstr(p_pur[i]==0)
 
@@ -437,7 +481,7 @@ def opt(M,T,error,fix,res_M_T,H):
 
         m.addConstr(p_el[i] + p_sol[i] + p_pump[i] + ele_load[i] + p_slack[i] == p_pur[i] + p_fc[i] + p_pv[i])
         m.addConstr(g_fc[i] == eta_fc * k_fc * h_fc[i])
-        m.addConstr(p_pump[i] == k_pump * m_fc[i])
+        m.addConstr(p_pump[i] == k_pump * (m_fc[i]+m_ht[i]+m_g_hp[i]+m_g_ghp[i]+m_g_mp[i]+m_ct[i]+m_q_hp[i]+m_q_ghp[i]+m_q_mp[i]))
         m.addConstr(p_fc[i] == k_fc * h_fc[i])#氢燃烧产电
 
 
@@ -466,8 +510,14 @@ def opt(M,T,error,fix,res_M_T,H):
         m.addConstr(g_fc[i] == c_kWh *(H_fc_fc[i] - H_fc_mp[i]))
         m.addConstr(g_hp[i] == c_kWh *(H_g_hp_hp[i] - H_g_hp_mp[i]))
         m.addConstr(g_ghp[i] == c_kWh *(H_g_ghp_ghp[i] - H_g_ghp_mp[i]))
-        m.addConstr(g_demand[i] == c_kWh *(H_g_mp_mp[i] - H_g_mp_mp_r[i]))
+        m.addConstr(g_ht[i] == c_kWh *(H_ht_ht[i] - H_ht_mp[i]))
+        m.addConstr(g_demand[i] + g_slack[i] == c_kWh *(H_g_mp_mp[i] - H_g_mp_mp_r[i]))
         
+        # cooling supply
+        m.addConstr(q_hp[i] == c_kWh *(H_q_hp_mp[i] - H_q_hp_hp[i]))
+        m.addConstr(q_ghp[i] == c_kWh *(H_q_ghp_mp[i] - H_q_ghp_ghp[i]))
+        m.addConstr(q_ct[i] == c_kWh *(H_ct_mp[i] - H_ct_ct[i]))
+        m.addConstr(q_demand[i] + q_slack[i] == c_kWh *(H_q_mp_mp_r[i] - H_q_mp_mp[i]))
         
 
         m.addConstr(p_fc[i] <= fc_max)
@@ -481,35 +531,62 @@ def opt(M,T,error,fix,res_M_T,H):
         # m.addConstr(t_ht[i] <=65)###
         m.addConstr(t_ht[i] >=t_ht_min)###
 
+        # main pipe
+        m.addConstr(H_g_mp_mp[i] == H_g_hp_hp[i] + H_g_ghp_ghp[i] + H_fc_fc[i] + H_ht_ht[i])
+        m.addConstr(H_q_mp_mp[i] == H_q_hp_hp[i] + H_q_ghp_ghp[i] + H_ct_ct[i])
+        m.addConstr(m_g_mp[i] == m_g_hp[i] + m_g_ghp[i] + m_fc[i] + m_ht[i])
+        m.addConstr(m_q_mp[i] == m_q_hp[i] + m_q_ghp[i] + m_ct[i])
+
 
         m.addConstr(p_pv[i]==k_pv*area_pv*r[i])
         # m.addConstr(t_he[i] >= 30)###
         # m.addConstr(t_cdu[i]<=95)###
         if with_rlt == 1:
-            m.addConstr(H_fc_fc[i]<=t_fc_max*m_fc[i])
-            m.addConstr(H_fc_ht[i]>=t_ht_min*m_fc[i])
-            # m.addConstr(H_ht_ht[i]<=65*m_ht)
-            # m.addConstr(H_cdu_ht[i]<=65*m_cdu)
-            # m.addConstr(H_ht_ht[i]>=30*m_ht)
-            # m.addConstr(H_cdu_ht[i]>=30*m_cdu)
+            m.addConstr(H_fc_fc[i]>=m_fc[i]*t_fc_1[i])
+            m.addConstr(H_fc_fc[i]<=m_fc[i]*t_fc_2[i])
+            m.addConstr(H_fc_mp[i]>=m_fc[i]*t_g_mp_r_1[i])
+            m.addConstr(H_fc_mp[i]<=m_fc[i]*t_g_mp_r_2[i])
+            m.addConstr(H_g_hp_hp[i]>=m_g_hp[i]*t_g_hp_1[i])
+            m.addConstr(H_g_hp_hp[i]<=m_g_hp[i]*t_g_hp_2[i])
+            m.addConstr(H_g_hp_mp[i]>=m_g_hp[i]*t_g_mp_r_1[i])
+            m.addConstr(H_g_hp_mp[i]<=m_g_hp[i]*t_g_mp_r_2[i])
+            m.addConstr(H_g_ghp_ghp[i]>=m_g_ghp[i]*t_g_ghp_1[i])
+            m.addConstr(H_g_ghp_ghp[i]<=m_g_ghp[i]*t_g_ghp_2[i])
+            m.addConstr(H_g_ghp_mp[i]>=m_g_ghp[i]*t_g_mp_r_1[i])
+            m.addConstr(H_g_ghp_mp[i]<=m_g_ghp[i]*t_g_mp_r_2[i])
+            m.addConstr(H_ht_ht[i]>=m_ht[i]*t_ht_1[i])
+            m.addConstr(H_ht_ht[i]<=m_ht[i]*t_ht_2[i])
+            m.addConstr(H_ht_mp[i]>=m_ht[i]*t_g_mp_1[i])
+            m.addConstr(H_ht_mp[i]<=m_ht[i]*t_g_mp_2[i])
+            m.addConstr(H_g_mp_mp[i]>=m_g_mp[i]*t_g_mp_1[i])
+            m.addConstr(H_g_mp_mp[i]<=m_g_mp[i]*t_g_mp_2[i])
+            m.addConstr(H_g_mp_mp_r[i]>=m_g_mp[i]*t_g_mp_r_1[i])
+            m.addConstr(H_g_mp_mp_r[i]<=m_g_mp[i]*t_g_mp_r_2[i])
 
-            # m.addConstr(H_he_he[i]>=30*m_he)
+            m.addConstr(H_ct_ct[i]>=m_ct[i]*t_ct_1[i])
+            m.addConstr(H_ct_ct[i]<=m_ct[i]*t_ct_2[i])
+            m.addConstr(H_ct_mp[i]>=m_ct[i]*t_q_mp_r_1[i])
+            m.addConstr(H_ct_mp[i]<=m_ct[i]*t_q_mp_r_2[i])
+            m.addConstr(H_q_hp_hp[i]>=m_q_hp[i]*t_q_hp_1[i])
+            m.addConstr(H_q_hp_hp[i]<=m_q_hp[i]*t_q_hp_2[i])
+            m.addConstr(H_q_hp_mp[i]>=m_q_hp[i]*t_q_mp_r_1[i])
+            m.addConstr(H_q_hp_mp[i]<=m_q_hp[i]*t_q_mp_r_2[i])
+            m.addConstr(H_q_ghp_ghp[i]>=m_q_ghp[i]*t_q_ghp_1[i])
+            m.addConstr(H_q_ghp_ghp[i]<=m_q_ghp[i]*t_q_ghp_2[i])
+            m.addConstr(H_q_ghp_mp[i]>=m_q_ghp[i]*t_q_mp_r_1[i])
+            m.addConstr(H_q_ghp_mp[i]<=m_q_ghp[i]*t_q_mp_r_2[i])
+            m.addConstr(H_q_mp_mp[i]>=m_q_mp[i]*t_q_mp_1[i])
+            m.addConstr(H_q_mp_mp[i]<=m_q_mp[i]*t_q_mp_2[i])
+            m.addConstr(H_q_mp_mp_r[i]>=m_q_mp[i]*t_q_mp_r_1[i])
+            m.addConstr(H_q_mp_mp_r[i]<=m_q_mp[i]*t_q_mp_r_2[i])
 
-            # m.addConstr(H_ct_ct[i]>=26.4*m_ct)
 
-            # m.addConstr(H_fc_cdu[i]<=95*m_fc)
-            # m.addConstr(H_cdu_cdu[i]<=95*m_cdu)
-            # m.addConstr(H_he_cdu[i]<=95*m_he)
-            # m.addConstr(H_ct_cdu[i]<=95*m_ct)
-
-
-
-            # m.addConstr(H_ht_ht[i]>=5*H_cdu_ht[i])
     
     if with_rlt == 1:
         for i in range(int(period/24)-1):
             # m.addConstr(H_ht_ht[i*24+24] == H_ht_ht[24*i])
-            m.addConstr(H_fc_ht[i*24+24] == H_fc_ht[24*i])
+            m.addConstr(H_ht_ht[i*24+24] == H_ht_ht[24*i])
+            m.addConstr(H_ct_ct[i*24+24] == H_ct_ct[24*i])
             # m.addConstr(H_cdu_ht[i*24+24] == H_cdu_ht[24*i])
         # m.addConstr(H_ht_ht[-1] == H_ht_ht[0])
         # m.addConstr(H_fc_ht[-1] == H_fc_ht[0])
@@ -528,7 +605,7 @@ def opt(M,T,error,fix,res_M_T,H):
         gp.quicksum([p_pur[i]*lambda_ele_in[i] for i in range(period)])*365/days-gp.quicksum(p_sol)*lambda_ele_out*365/days)
     #-gp.quicksum(p_sol)*lambda_ele_out 
     # First optimize() call will fail - need to set NonConvex to 2
-    m.params.NonConvex = 1
+    m.params.NonConvex = 2
     m.params.MIPGap = 0.01
     if nn != 1:
         m.params.MIPGap = 0.02
@@ -543,14 +620,19 @@ def opt(M,T,error,fix,res_M_T,H):
     if m.status == GRB.INFEASIBLE or m.status == 4:
         print('Model is infeasible')
         m.computeIIS()
-        m.write('model.ilp')
+        
         print("Irreducible inconsistent subsystem is written to file 'model.ilp'")
+        if fix == 1:
+            m.write('model_fix.ilp')
+            print("fix solve failed")
+        else:
+            m.write('model.ilp')
         return 1,1,1,1,1,1,10000000
     
-    g_ht = [c_kWh*m_ht*(t_ht[i+1].X-t_ht[i].X) for i in range(period-1)]
-    g_ht.append(c_kWh*m_ht*(t_ht[0].X-t_ht[-1].X))
-    q_ct = [-c_kWh*m_ct*(t_ct[i+1].X-t_ct[i].X) for i in range(period-1)]
-    q_ct.append(-c_kWh*m_ct*(t_ct[0].X-t_ct[-1].X))
+    # g_ht = [c_kWh*m_ht*(t_ht[i+1].X-t_ht[i].X) for i in range(period-1)]
+    # g_ht.append(c_kWh*m_ht*(t_ht[0].X-t_ht[-1].X))
+    # q_ct = [-c_kWh*m_ct*(t_ct[i+1].X-t_ct[i].X) for i in range(period-1)]
+    # q_ct.append(-c_kWh*m_ct*(t_ct[0].X-t_ct[-1].X))
     
     ans = {'objective':m.objVal,
 
@@ -578,11 +660,12 @@ def opt(M,T,error,fix,res_M_T,H):
             'g_hp':[g_hp[i].X for i in range(period)],
             'g_ghp':[g_ghp[i].X for i in range(period)],
             'z_ghpg':[z_ghpg[i].X for i in range(period)],
-            'g_ht':[g_ht[i] for i in range(period)],
+            'g_ht':[g_ht[i].X for i in range(period)],
             # 'g_slack':[g_slack[i].X for i in range(period)],
 
             'q_load':q_demand,
             'q_hp':[q_hp[i].X for i in range(period)],
+            'q_ct':[q_ct[i].X for i in range(period)],
             'q_ghp':[q_ghp[i].X for i in range(period)],
             'z_gphq':[z_ghpq[i].X for i in range(period)],
 
@@ -596,64 +679,139 @@ def opt(M,T,error,fix,res_M_T,H):
             # 'z_idc':[z_idc[i].X for i in range(period)],
 
             't_ht':[t_ht[i].X for i in range(period)],
-            't_ct':[t_ct[i].X for i in range(period)],
+            't_g_mp':[t_g_mp[i].X for i in range(period)],
+            't_g_mp_r':[t_g_mp_r[i].X for i in range(period)],
+            't_g_hp':[t_g_hp[i].X for i in range(period)],
+            't_g_ghp':[t_g_ghp[i].X for i in range(period)],
             't_fc':[t_fc[i].X for i in range(period)],
+
+            't_ct':[t_ct[i].X for i in range(period)],
+            't_q_hp':[t_q_hp[i].X for i in range(period)],
+            't_q_ghp':[t_q_ghp[i].X for i in range(period)],
+            't_q_mp':[t_q_mp[i].X for i in range(period)],
+            't_q_mp_r':[t_q_mp_r[i].X for i in range(period)],
 
             #'m_cdu':[m_cdu[i].X for i in range(period)],
             'm_fc':[m_fc[i].x for i in range(period)],
+            'm_g_mp':[m_g_mp[i].x for i in range(period)],
+            'm_g_hp':[m_g_hp[i].x for i in range(period)],
+            'm_g_ghp':[m_g_ghp[i].x for i in range(period)],
+            'm_ht':[m_ht[i].x for i in range(period)],
+
+            'm_q_hp':[m_q_hp[i].x for i in range(period)],
+            'm_q_ghp':[m_q_ghp[i].x for i in range(period)],
+            'm_q_mp':[m_q_mp[i].x for i in range(period)],
+            'm_ct':[m_ct[i].x for i in range(period)],
+
+
+
             'h_el':[h_el[i].X for i in range(period)],
             'h_fc':[h_fc[i].X for i in range(period)],
             'h_sto':[h_sto[i].X for i in range(period)],
             'h_pur':[h_pur[i].X for i in range(period)]
             }
     H = {
-         'H_fc_fc'  :m.getAttr('x', H_fc_fc),
-         'H_fc_ht'  :m.getAttr('x', H_fc_ht),
-        #  'H_fc_cdu' :m.getAttr('x', H_fc_cdu),
-        #  'H_cdu_ht' :m.getAttr('x', H_cdu_ht),
-        #  'H_cdu_cdu':m.getAttr('x', H_cdu_cdu),
-        #  'H_he_he'  :m.getAttr('x', H_he_he),
-        #  'H_he_cdu' :m.getAttr('x', H_he_cdu),
-        #  "H_ct_cdu" :m.getAttr('x', H_ct_cdu),
-        #  "H_ct_ct"  :m.getAttr('x', H_ct_ct),
+            'H_fc_fc'  :m.getAttr('x', H_fc_fc),
+            'H_fc_mp'  :m.getAttr('x', H_fc_mp),
+            'H_ht_ht'  :m.getAttr('x', H_ht_ht),
+            'H_ht_mp'  :m.getAttr('x', H_ht_mp),
+            'H_g_hp_hp':m.getAttr('x', H_g_hp_hp),
+            'H_g_hp_mp':m.getAttr('x', H_g_hp_mp),
+            'H_g_ghp_ghp':m.getAttr('x', H_g_ghp_ghp),
+            'H_g_ghp_mp':m.getAttr('x', H_g_ghp_mp),
+            'H_g_mp_mp':m.getAttr('x', H_g_mp_mp),
+            'H_g_mp_mp_r':m.getAttr('x', H_g_mp_mp_r),
+
+            'H_q_hp_hp':m.getAttr('x', H_q_hp_hp),
+            'H_q_hp_mp':m.getAttr('x', H_q_hp_mp),
+            'H_q_ghp_ghp':m.getAttr('x', H_q_ghp_ghp),
+            'H_q_ghp_mp':m.getAttr('x', H_q_ghp_mp),
+            'H_q_mp_mp':m.getAttr('x', H_q_mp_mp),
+            'H_q_mp_mp_r':m.getAttr('x', H_q_mp_mp_r),
+            'H_ct_ct'  :m.getAttr('x', H_ct_ct),
+            'H_ct_mp'  :m.getAttr('x', H_ct_mp),
+
         }
     M = {
-        # "m_ht"   :[m_ht_1,m_ht_2],
         "m_fc"   :[m_fc_1,m_fc_2],
-        # "m_cdu"  :[m_cdu_1,m_cdu_2],
-        # "m_he"   :[m_he_1,m_he_2],
-        # "m_ct"   :[m_ct_1,m_ct_2]
+        'm_ht'   :[m_ht_1,m_ht_2],
+        'm_g_mp' :[m_g_mp_1,m_g_mp_2],
+        'm_g_hp' :[m_g_hp_1,m_g_hp_2],
+        'm_g_ghp':[m_g_ghp_1,m_g_ghp_2],
+
+        'm_q_hp' :[m_q_hp_1,m_q_hp_2],
+        'm_q_ghp':[m_q_ghp_1,m_q_ghp_2],
+        'm_q_mp' :[m_q_mp_1,m_q_mp_2],
+        'm_ct'   :[m_ct_1,m_ct_2],
+
     }
     T = {
         "t_ht"   :[t_ht_1,t_ht_2],
         "t_fc"   :[t_fc_1,t_fc_2],
-        # "t_cdu"  :[t_cdu_1,t_cdu_2],
-        # "t_he"   :[t_he_1,t_he_2],
-        # "t_ct"   :[t_ct_1,t_ct_2]
+        "t_g_mp" :[t_g_mp_1,t_g_mp_2],
+        "t_g_hp" :[t_g_hp_1,t_g_hp_2],
+        "t_g_ghp":[t_g_ghp_1,t_g_ghp_2],
+        't_g_mp_r':[t_g_mp_r_1,t_g_mp_r_2],
+
+        "t_q_hp" :[t_q_hp_1,t_q_hp_2],
+        "t_q_ghp":[t_q_ghp_1,t_q_ghp_2],
+        "t_q_mp" :[t_q_mp_1,t_q_mp_2],
+        "t_ct"   :[t_ct_1,t_ct_2],
+        't_q_mp_r':[t_q_mp_r_1,t_q_mp_r_2],
+        
+
     }
     res_M_T = {
-        # 'm_cdu':m_cdu.x,
-        # 'm_he':m_he.x,
+
         'm_fc':[m_fc[i].x for i in range(period)],
-        # 'm_ht':m_ht.x,
-        # 'm_ct':m_ct.x,
+        'm_ht':[m_ht[i].x for i in range(period)],
+        'm_g_mp':[m_g_mp[i].x for i in range(period)],
+        'm_g_hp':[m_g_hp[i].x for i in range(period)],
+        'm_g_ghp':[m_g_ghp[i].x for i in range(period)],
+
+        'm_q_hp':[m_q_hp[i].x for i in range(period)],
+        'm_q_ghp':[m_q_ghp[i].x for i in range(period)],
+        'm_q_mp':[m_q_mp[i].x for i in range(period)],
+        'm_ct':[m_ct[i].x for i in range(period)],
+
+
+
         't_ht':[t_ht[i].X for i in range(period)],
-        # 't_cdu':[t_cdu[i].X for i in range(period)],
-        # 't_he':[t_he[i].X for i in range(period)],
         't_fc':[t_fc[i].X for i in range(period)],
-        # 't_ct':[t_ct[i].X for i in range(period)]
+        't_g_mp':[t_g_mp[i].X for i in range(period)],
+        't_g_hp':[t_g_hp[i].X for i in range(period)],
+        't_g_ghp':[t_g_ghp[i].X for i in range(period)],
+        't_g_mp_r':[t_g_mp_r[i].X for i in range(period)],
+
+        't_q_hp':[t_q_hp[i].X for i in range(period)],
+        't_q_ghp':[t_q_ghp[i].X for i in range(period)],
+        't_q_mp':[t_q_mp[i].X for i in range(period)],
+        't_ct':[t_ct[i].X for i in range(period)],
+        't_q_mp_r':[t_q_mp_r[i].X for i in range(period)],
+
     }
     error = {
         # "H_ht_ht"   : [(H_ht_ht[i].X-m_ht.X*t_ht[i].X)/    (m_ht.X*t_ht[i].X  +0.001)  for i in range(period)],
         "H_fc_fc"   : [(H_fc_fc[i].X-m_fc[i].X*t_fc[i].X)/    (m_fc[i].X*t_fc[i].X  +0.001)  for i in range(period)],
-        "H_fc_ht"   : [(H_fc_ht[i].X-m_fc[i].X*t_ht[i].X)/    (m_fc[i].X*t_ht[i].X  +0.001)  for i in range(period)],
-        # "H_fc_cdu"  : [(H_fc_cdu[i].X-m_fc.X*t_cdu[i].X)/  (m_fc.X*t_cdu[i].X +0.001)  for i in range(period)],
-        # "H_cdu_cdu" : [(H_cdu_cdu[i].X-m_cdu.X*t_cdu[i].X)/(m_cdu.X*t_cdu[i].X+0.001)  for i in range(period)],
-        # "H_cdu_ht"  : [(H_cdu_ht[i].X-m_cdu.X*t_ht[i].X)/  (m_cdu.X*t_ht[i].X +0.001)  for i in range(period)],
-        # "H_he_he"   : [(H_he_he[i].X-m_he.X*t_he[i].X)/    (m_he.X*t_he[i].X  +0.001)  for i in range(period)],
-        # "H_he_cdu"  : [(H_he_cdu[i].X-m_he.X*t_cdu[i].X)/  (m_he.X*t_cdu[i].X +0.001)  for i in range(period)],
-        # "H_ct_cdu"  : [(H_ct_cdu[i].X-m_ct.X*t_cdu[i].X)/  (m_ct.X*t_cdu[i].X  +0.001)  for i in range(period)],
-        # "H_ct_ct"   : [(H_ct_ct[i].X-m_ct.X*t_ct[i].X)/    (m_ct.X*t_ct[i].X +0.001)  for i in range(period)],
+        "H_fc_mp"   : [(H_fc_mp[i].X-m_fc[i].X*t_g_mp[i].X)/    (m_fc[i].X*t_g_mp[i].X  +0.001)  for i in range(period)],
+        'H_ht_ht'   : [(H_ht_ht[i].X-m_ht[i].X*t_ht[i].X)/    (m_ht[i].X*t_ht[i].X  +0.001)  for i in range(period)],
+        'H_ht_mp'   : [(H_ht_mp[i].X-m_ht[i].X*t_g_mp[i].X)/    (m_ht[i].X*t_g_mp[i].X  +0.001)  for i in range(period)],
+        'H_g_hp_hp' : [(H_g_hp_hp[i].X-m_g_hp[i].X*t_g_hp[i].X)/    (m_g_hp[i].X*t_g_hp[i].X  +0.001)  for i in range(period)],
+        'H_g_hp_mp' : [(H_g_hp_mp[i].X-m_g_hp[i].X*t_g_mp[i].X)/    (m_g_hp[i].X*t_g_mp[i].X  +0.001)  for i in range(period)],
+        'H_g_ghp_ghp':[(H_g_ghp_ghp[i].X-m_g_ghp[i].X*t_g_ghp[i].X)/    (m_g_ghp[i].X*t_g_ghp[i].X  +0.001)  for i in range(period)],
+        'H_g_ghp_mp':[(H_g_ghp_mp[i].X-m_g_ghp[i].X*t_g_mp[i].X)/    (m_g_ghp[i].X*t_g_mp[i].X  +0.001)  for i in range(period)],
+        'H_g_mp_mp' : [(H_g_mp_mp[i].X-m_g_mp[i].X*t_g_mp[i].X)/    (m_g_mp[i].X*t_g_mp[i].X  +0.001)  for i in range(period)],
+        'H_g_mp_mp_r':[(H_g_mp_mp_r[i].X-m_g_mp[i].X*t_g_mp_r[i].X)/    (m_g_mp[i].X*t_g_mp_r[i].X  +0.001)  for i in range(period)],
+
+        'H_q_hp_hp' : [(H_q_hp_hp[i].X-m_q_hp[i].X*t_q_hp[i].X)/    (m_q_hp[i].X*t_q_hp[i].X  +0.001)  for i in range(period)],
+        'H_q_hp_mp' : [(H_q_hp_mp[i].X-m_q_hp[i].X*t_q_mp[i].X)/    (m_q_hp[i].X*t_q_mp[i].X  +0.001)  for i in range(period)],
+        'H_q_ghp_ghp':[(H_q_ghp_ghp[i].X-m_q_ghp[i].X*t_q_ghp[i].X)/    (m_q_ghp[i].X*t_q_ghp[i].X  +0.001)  for i in range(period)],
+        'H_q_ghp_mp':[(H_q_ghp_mp[i].X-m_q_ghp[i].X*t_q_mp[i].X)/    (m_q_ghp[i].X*t_q_mp[i].X  +0.001)  for i in range(period)],
+        'H_q_mp_mp' : [(H_q_mp_mp[i].X-m_q_mp[i].X*t_q_mp[i].X)/    (m_q_mp[i].X*t_q_mp[i].X  +0.001)  for i in range(period)],
+        'H_q_mp_mp_r':[(H_q_mp_mp_r[i].X-m_q_mp[i].X*t_q_mp_r[i].X)/    (m_q_mp[i].X*t_q_mp_r[i].X  +0.001)  for i in range(period)],
+        'H_ct_ct'   : [(H_ct_ct[i].X-m_ct[i].X*t_ct[i].X)/    (m_ct[i].X*t_ct[i].X  +0.001)  for i in range(period)],
+        'H_ct_mp'   : [(H_ct_mp[i].X-m_ct[i].X*t_q_mp[i].X)/    (m_ct[i].X*t_q_mp[i].X  +0.001)  for i in range(period)],
+
     }
     print('g_fc:')
     print(max([g_fc[i].X for i in range(period)]))

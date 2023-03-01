@@ -2,7 +2,7 @@
 Author: guo_idpc
 Date: 2023-02-23 19:34:32
 LastEditors: guo_idpc 867718012@qq.com
-LastEditTime: 2023-02-27 17:01:39
+LastEditTime: 2023-03-01 21:01:54
 FilePath: /bilinear/main_model/method.py
 Description: 人一生会遇到约2920万人,两个人相爱的概率是0.000049,所以你不爱我,我不怪你.
 
@@ -56,7 +56,7 @@ def piece_McCormick(model,H,x,y,x1,x2,y1,y2,piece_count,error,i_number,H_name,n)
     #print(piece_count)
     #print(error)
     c = [model.addVar(vtype=GRB.BINARY, lb=0,ub=1,name=f"c{t}") for t in range(n)]
-    if abs(error[H_name][i_number])<ggggap or n == 1:
+    if abs(error[H_name][i_number])<ggggap and n == 1:
     #if H_name != "H_ct_ct":
             #break
         #print((piece_count%3)*period+int(piece_count/3))
@@ -141,31 +141,55 @@ def bound_con(period,H,gap,M,T,res_M_T,n,k):
 
 
 
-    # m_ht_1,m_ht_2   = M["m_ht"][0], M["m_ht"][1]
+    m_ht_1,m_ht_2   = M["m_ht"][0], M["m_ht"][1]
     m_fc_1,m_fc_2   = M["m_fc"][0], M["m_fc"][1]
-    # m_cdu_1,m_cdu_2 = M["m_cdu"][0], M["m_cdu"][1]
-    # m_he_1,m_he_2   = M["m_he"][0], M["m_he"][1]
-    # m_ct_1,m_ct_2   = M["m_ct"][0], M["m_ct"][1]
+    m_g_hp_1,m_g_hp_2 = M["m_g_hp"][0], M["m_g_hp"][1]
+    m_g_ghp_1,m_g_ghp_2 = M["m_g_ghp"][0], M["m_g_ghp"][1]
+    m_g_mp_1,m_g_mp_2 = M["m_g_mp"][0], M["m_g_mp"][1]
+
+    m_ct_1,m_ct_2   = M["m_ct"][0], M["m_ct"][1]
+    m_q_hp_1,m_q_hp_2 = M["m_q_hp"][0], M["m_q_hp"][1]
+    m_q_ghp_1,m_q_ghp_2 = M["m_q_ghp"][0], M["m_q_ghp"][1]
+    m_q_mp_1,m_q_mp_2 = M["m_q_mp"][0], M["m_q_mp"][1]
+
 
     t_ht_1,t_ht_2   = T['t_ht'][0] ,T['t_ht'][1]
     t_fc_1,t_fc_2   = T['t_fc'][0] ,T['t_fc'][1]
-    # t_cdu_1,t_cdu_2 = T['t_cdu'][0],T['t_cdu'][1]
-    # t_he_1,t_he_2   = T['t_he'][0] ,T['t_he'][1]
-    # t_ct_1,t_ct_2   = T['t_ct'][0] ,T['t_ct'][1]
+    t_g_hp_1,t_g_hp_2 = T['t_g_hp'][0] ,T['t_g_hp'][1]
+    t_g_ghp_1,t_g_ghp_2 = T['t_g_ghp'][0] ,T['t_g_ghp'][1]
+    t_g_mp_1,t_g_mp_2 = T['t_g_mp'][0] ,T['t_g_mp'][1]
+    t_g_mp_r_1,t_g_mp_r_2 = T['t_g_mp_r'][0] ,T['t_g_mp_r'][1]
+
+    t_ct_1,t_ct_2   = T['t_ct'][0] ,T['t_ct'][1]
+    t_q_hp_1,t_q_hp_2 = T['t_q_hp'][0] ,T['t_q_hp'][1]
+    t_q_ghp_1,t_q_ghp_2 = T['t_q_ghp'][0] ,T['t_q_ghp'][1]
+    t_q_mp_1,t_q_mp_2 = T['t_q_mp'][0] ,T['t_q_mp'][1]
+    t_q_mp_r_1,t_q_mp_r_2 = T['t_q_mp_r'][0] ,T['t_q_mp_r'][1]
 
 
-
-    # m_cdu = res_M_T['m_cdu']
-    # m_he = res_M_T['m_he']
     m_fc = res_M_T['m_fc']
-    # m_ht = res_M_T['m_ht']
-    # m_ct = res_M_T['m_ct']
+    m_ht = res_M_T['m_ht']
+    m_g_hp = res_M_T['m_g_hp']
+    m_g_ghp = res_M_T['m_g_ghp']
+    m_g_mp = res_M_T['m_g_mp']
+    m_ct = res_M_T['m_ct']
+    m_q_hp = res_M_T['m_q_hp']
+    m_q_ghp = res_M_T['m_q_ghp']
+    m_q_mp = res_M_T['m_q_mp']
 
     t_ht = res_M_T['t_ht']
-    # t_cdu = res_M_T['t_cdu']
-    # t_he = res_M_T['t_he']
     t_fc = res_M_T['t_fc']
-    # t_ct = res_M_T['t_ct']
+    t_g_hp = res_M_T['t_g_hp']
+    t_g_ghp = res_M_T['t_g_ghp']
+    t_g_mp = res_M_T['t_g_mp']
+    t_g_mp_r = res_M_T['t_g_mp_r']
+
+    t_ct = res_M_T['t_ct']
+    t_q_hp = res_M_T['t_q_hp']
+    t_q_ghp = res_M_T['t_q_ghp']
+    t_q_mp = res_M_T['t_q_mp']
+    t_q_mp_r = res_M_T['t_q_mp_r']
+
 
 
     #fix 存在的问题，一个温度对应多个m，按照一个fix别的误差可能会增大。
@@ -177,55 +201,135 @@ def bound_con(period,H,gap,M,T,res_M_T,n,k):
 
 
 
-    # d_m_fc  = max(m_fc-m_fc_1,m_fc_2-m_fc)
-  
-    # m_fc_1 = max(m_fc_1,m_fc-k*d_m_fc)
-
-    # m_fc_2 = min(m_fc_2,m_fc+k*d_m_fc)
- 
 
     #init
+    d_m_fc = [0 for _ in range(period)]
+    d_m_ht = [0 for _ in range(period)]
+    d_m_g_hp = [0 for _ in range(period)]
+    d_m_g_ghp = [0 for _ in range(period)]
+    d_m_g_mp = [0 for _ in range(period)]
+
+    d_m_ct = [0 for _ in range(period)]
+    d_m_q_hp = [0 for _ in range(period)]
+    d_m_q_ghp = [0 for _ in range(period)]
+    d_m_q_mp = [0 for _ in range(period)]
+    
     d_t_ht = [0 for _ in range(period)]
     d_t_fc = [0 for _ in range(period)]
-    d_m_fc = [0 for _ in range(period)]
-    # d_t_cdu = [0 for _ in range(period)]
-    # d_t_he = [0 for _ in range(period)]
-    # d_t_ct = [0 for _ in range(period)]
-    #d_t_el = [0 for _ in range(period)]
+    d_t_g_hp = [0 for _ in range(period)]
+    d_t_g_ghp = [0 for _ in range(period)]
+    d_t_g_mp = [0 for _ in range(period)]
+    d_t_g_mp_r = [0 for _ in range(period)]
+
+    d_t_ct = [0 for _ in range(period)]
+    d_t_q_hp = [0 for _ in range(period)]
+    d_t_q_ghp = [0 for _ in range(period)]
+    d_t_q_mp = [0 for _ in range(period)]
+    d_t_q_mp_r = [0 for _ in range(period)]
+
+
     for i in range(period):
+
+        d_m_fc[i] = max(m_fc[i]-m_fc_1[i],m_fc_2[i]-m_fc[i])
+        d_m_ht[i] = max(m_ht[i]-m_ht_1[i],m_ht_2[i]-m_ht[i])
+        d_m_g_hp[i] = max(m_g_hp[i]-m_g_hp_1[i],m_g_hp_2[i]-m_g_hp[i])
+        d_m_g_ghp[i] = max(m_g_ghp[i]-m_g_ghp_1[i],m_g_ghp_2[i]-m_g_ghp[i])
+        d_m_g_mp[i] = max(m_g_mp[i]-m_g_mp_1[i],m_g_mp_2[i]-m_g_mp[i])
+
+        d_m_ct[i] = max(m_ct[i]-m_ct_1[i],m_ct_2[i]-m_ct[i])
+        d_m_q_hp[i] = max(m_q_hp[i]-m_q_hp_1[i],m_q_hp_2[i]-m_q_hp[i])
+        d_m_q_ghp[i] = max(m_q_ghp[i]-m_q_ghp_1[i],m_q_ghp_2[i]-m_q_ghp[i])
+        d_m_q_mp[i] = max(m_q_mp[i]-m_q_mp_1[i],m_q_mp_2[i]-m_q_mp[i])
+
         d_t_ht[i] = max(t_ht[i]-t_ht_1[i],t_ht_2[i]-t_ht[i]) 
         d_t_fc[i] = max(t_fc[i]-t_fc_1[i],t_fc_2[i]-t_fc[i])
-        d_m_fc[i] = max(m_fc[i]-m_fc_1[i],m_fc_2[i]-m_fc[i])
-        # d_t_cdu[i] = max(t_cdu[i]-t_cdu_1[i],t_cdu_2[i]-t_cdu[i])
-        # d_t_he[i] = max(t_he[i]-t_he_1[i],t_he_2[i]-t_he[i])
-        # d_t_ct[i] = max(t_ct[i]-t_ct_1[i],t_ct_2[i]-t_ct[i])
-        #d_t_el[i] = max(t_el[i]-t_el_1[i],t_el_2[i]-t_el[i])
+        d_t_g_hp[i] = max(t_g_hp[i]-t_g_hp_1[i],t_g_hp_2[i]-t_g_hp[i])
+        d_t_g_ghp[i] = max(t_g_ghp[i]-t_g_ghp_1[i],t_g_ghp_2[i]-t_g_ghp[i])
+        d_t_g_mp[i] = max(t_g_mp[i]-t_g_mp_1[i],t_g_mp_2[i]-t_g_mp[i])
+        d_t_g_mp_r[i] = max(t_g_mp_r[i]-t_g_mp_r_1[i],t_g_mp_r_2[i]-t_g_mp_r[i])
+
+        d_t_ct[i] = max(t_ct[i]-t_ct_1[i],t_ct_2[i]-t_ct[i])
+        d_t_q_hp[i] = max(t_q_hp[i]-t_q_hp_1[i],t_q_hp_2[i]-t_q_hp[i])
+        d_t_q_ghp[i] = max(t_q_ghp[i]-t_q_ghp_1[i],t_q_ghp_2[i]-t_q_ghp[i])
+        d_t_q_mp[i] = max(t_q_mp[i]-t_q_mp_1[i],t_q_mp_2[i]-t_q_mp[i])
+        d_t_q_mp_r[i] = max(t_q_mp_r[i]-t_q_mp_r_1[i],t_q_mp_r_2[i]-t_q_mp_r[i])
+        
+
+
+        m_fc_1[i] = max(m_fc_1[i],m_fc[i]-k*d_m_fc[i])
+        m_ht_1[i] = max(m_ht_1[i],m_ht[i]-k*d_m_ht[i])
+        m_g_hp_1[i] = max(m_g_hp_1[i],m_g_hp[i]-k*d_m_g_hp[i])
+        m_g_ghp_1[i] = max(m_g_ghp_1[i],m_g_ghp[i]-k*d_m_g_ghp[i])
+        m_g_mp_1[i] = max(m_g_mp_1[i],m_g_mp[i]-k*d_m_g_mp[i])
+
+
         t_ht_1[i] = max(t_ht_1[i],t_ht[i]-k*d_t_ht[i]) #if abs(H['H_ht_ht'][i]-m_ht*t_ht[i])/H['H_ht_ht'][i] >= 0.000001 else t_ht_1[i]
         t_fc_1[i] = max(t_fc_1[i],t_fc[i]-k*d_t_fc[i]) #if abs(H['H_fc_fc'][i]-m_fc*t_fc[i])/H['H_fc_fc'][i] >= 0.000001 else t_fc_1[i]
-        m_fc_1[i] = max(m_fc_1[i],m_fc[i]-k*d_m_fc[i])
+        t_g_hp_1[i] = max(t_g_hp_1[i],t_g_hp[i]-k*d_t_g_hp[i]) #if abs(H['H_g_hp_g_hp'][i]-m_g_hp*t_g_hp[i])/H['H_g_hp_g_hp'][i] >= 0.000001 else t_g_hp_1[i]
+        t_g_ghp_1[i] = max(t_g_ghp_1[i],t_g_ghp[i]-k*d_t_g_ghp[i]) #
+        t_g_mp_1[i] = max(t_g_mp_1[i],t_g_mp[i]-k*d_t_g_mp[i])
+        t_g_mp_r_1[i] = max(t_g_mp_r_1[i],t_g_mp_r[i]-k*d_t_g_mp_r[i])
+
+        t_ct_1[i] = max(t_ct_1[i],t_ct[i]-k*d_t_ct[i])
+        t_q_hp_1[i] = max(t_q_hp_1[i],t_q_hp[i]-k*d_t_q_hp[i])
+        t_q_ghp_1[i] = max(t_q_ghp_1[i],t_q_ghp[i]-k*d_t_q_ghp[i])
+        t_q_mp_1[i] = max(t_q_mp_1[i],t_q_mp[i]-k*d_t_q_mp[i])
+        t_q_mp_r_1[i] = max(t_q_mp_r_1[i],t_q_mp_r[i]-k*d_t_q_mp_r[i])
+
         # t_cdu_1[i] = max(t_cdu_1[i],t_cdu[i]-k*d_t_cdu[i])
         # t_he_1[i] = max(t_he_1[i],t_he[i]-k*d_t_he[i])
         # t_ct_1[i] = max(t_ct_1[i],t_ct[i]-k*d_t_ct[i])
         #t_el_1[i] = max(t_el_1[i],t_el[i]-k*d_t_el[i]) #if abs(H['H_el_el'][i]-m_el*t_el[i])/H['H_el_el'][i] >= 0.000001 else t_el_1[i]
+        m_fc_2[i] = min(m_fc_2[i],m_fc[i]+k*d_m_fc[i])
+        m_ht_2[i] = min(m_ht_2[i],m_ht[i]+k*d_m_ht[i])
+        m_g_hp_2[i] = min(m_g_hp_2[i],m_g_hp[i]+k*d_m_g_hp[i])
+        m_g_ghp_2[i] = min(m_g_ghp_2[i],m_g_ghp[i]+k*d_m_g_ghp[i])
+        m_g_mp_2[i] = min(m_g_mp_2[i],m_g_mp[i]+k*d_m_g_mp[i])
+
         t_ht_2[i] = min(t_ht_2[i],t_ht[i]+k*d_t_ht[i]) #if abs(H['H_ht_ht'][i]-m_ht*t_ht[i])/H['H_ht_ht'][i] >= 0.000001 else t_ht_2[i]
         t_fc_2[i] = min(t_fc_2[i],t_fc[i]+k*d_t_fc[i]) #if abs(H['H_fc_fc'][i]-m_fc*t_fc[i])/H['H_fc_fc'][i] >= 0.000001 else t_fc_2[i]
-        m_fc_2[i] = min(m_fc_2[i],m_fc[i]+k*d_m_fc[i])
+        t_g_hp_2[i] = min(t_g_hp_2[i],t_g_hp[i]+k*d_t_g_hp[i])
+        t_g_ghp_2[i] = min(t_g_ghp_2[i],t_g_ghp[i]+k*d_t_g_ghp[i])
+        t_g_mp_2[i] = min(t_g_mp_2[i],t_g_mp[i]+k*d_t_g_mp[i])
+        t_g_mp_r_2[i] = min(t_g_mp_r_2[i],t_g_mp_r[i]+k*d_t_g_mp_r[i])
+
+        t_ct_2[i] = min(t_ct_2[i],t_ct[i]+k*d_t_ct[i])
+        t_q_hp_2[i] = min(t_q_hp_2[i],t_q_hp[i]+k*d_t_q_hp[i])
+        t_q_ghp_2[i] = min(t_q_ghp_2[i],t_q_ghp[i]+k*d_t_q_ghp[i])
+        t_q_mp_2[i] = min(t_q_mp_2[i],t_q_mp[i]+k*d_t_q_mp[i])
+        t_q_mp_r_2[i] = min(t_q_mp_r_2[i],t_q_mp_r[i]+k*d_t_q_mp_r[i])
+        
         # t_cdu_2[i] = min(t_cdu_2[i],t_cdu[i]+k*d_t_cdu[i])
         # t_he_2[i] = min(t_he_2[i],t_he[i]+k*d_t_he[i])
         # t_ct_2[i] = min(t_ct_2[i],t_ct[i]+k*d_t_ct[i])
         #t_el_2[i] = min(t_el_2[i],t_el[i]+k*d_t_el[i]) #if abs(H['H_el_el'][i]-m_el*t_el[i])/H['H_el_el'][i] >= 0.000001 else t_el_2[i]
     M = {
-        # "m_ht"   :[m_ht_1,m_ht_2],
         "m_fc"   :[m_fc_1,m_fc_2],
-        # "m_cdu"  :[m_cdu_1,m_cdu_2],
-        # "m_he"   :[m_he_1,m_he_2],
-        # "m_ct"   :[m_ct_1,m_ct_2],
+        'm_ht'   :[m_ht_1,m_ht_2],
+        'm_g_mp' :[m_g_mp_1,m_g_mp_2],
+        'm_g_hp' :[m_g_hp_1,m_g_hp_2],
+        'm_g_ghp':[m_g_ghp_1,m_g_ghp_2],
+
+        'm_q_hp' :[m_q_hp_1,m_q_hp_2],
+        'm_q_ghp':[m_q_ghp_1,m_q_ghp_2],
+        'm_q_mp' :[m_q_mp_1,m_q_mp_2],
+        'm_ct'   :[m_ct_1,m_ct_2],
+
     }
     T = {
         "t_ht"   :[t_ht_1,t_ht_2],
         "t_fc"   :[t_fc_1,t_fc_2],
-        # "t_cdu"  :[t_cdu_1,t_cdu_2],
-        # "t_he"   :[t_he_1,t_he_2],
-        # "t_ct"   :[t_ct_1,t_ct_2]
+        "t_g_mp" :[t_g_mp_1,t_g_mp_2],
+        "t_g_hp" :[t_g_hp_1,t_g_hp_2],
+        "t_g_ghp":[t_g_ghp_1,t_g_ghp_2],
+        't_g_mp_r':[t_g_mp_r_1,t_g_mp_r_2],
+
+        "t_q_hp" :[t_q_hp_1,t_q_hp_2],
+        "t_q_ghp":[t_q_ghp_1,t_q_ghp_2],
+        "t_q_mp" :[t_q_mp_1,t_q_mp_2],
+        "t_ct"   :[t_ct_1,t_ct_2],
+        't_q_mp_r':[t_q_mp_r_1,t_q_mp_r_2],
+        
+
     }
     return M,T

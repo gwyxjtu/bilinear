@@ -2,7 +2,7 @@
 Author: guo_idpc
 Date: 2023-02-23 17:19:03
 LastEditors: guo_idpc 867718012@qq.com
-LastEditTime: 2023-02-27 14:57:20
+LastEditTime: 2023-03-01 21:09:50
 FilePath: /bilinear/main_blp.py
 Description: 人一生会遇到约2920万人,两个人相爱的概率是0.000049,所以你不爱我,我不怪你.
 
@@ -43,62 +43,133 @@ def plot_for_test(error_max,error_min,obj_print,slack_num_list,res):
     # exit(0)
 
 if __name__ == '__main__':
+    t_ht_min = 30
+    t_ht_max = 80
+    t_fc_min = 40
+    t_fc_max = 65
+    t_g_hp_min = 30
+    t_g_hp_max = 65
+    t_g_ghp_min = 30
+    t_g_ghp_max = 60
+    t_g_mp_min = 30
+    t_g_mp_max = 80
+    t_g_mp_r_min = 20
+    t_g_mp_r_max = 80
+    t_ct_min = 5
+    t_ct_max = 20
+
+    t_q_hp_min = 5
+    t_q_hp_max = 20
+    t_q_ghp_min = 5
+    t_q_ghp_max = 20
+    t_q_mp_min = 5
+    t_q_mp_max = 20
+    t_q_mp_r_min = 5
+    t_q_mp_r_max = 30
+
     period = len(g_demand)
-    # m_ht_1,m_ht_2   = 100000,1000000
     m_fc_1   =[0 for _ in range(period)]
     m_fc_2   =[100000 for _ in range(period)]
-    # m_cdu_1,m_cdu_2 = 100000,1000000
-    # m_he_1,m_he_2   = 10000,100000
-    # m_ct_1,m_ct_2   = 10000,100000
-    t_ht_1  = [40 for _ in range(period)]
-    t_ht_2  = [65 for _ in range(period)]
-     
-    t_fc_1  = [40 for _ in range(period)]
-    t_fc_2  = [65 for _ in range(period)]
+    m_ht_1   =[-100000 for _ in range(period)]
+    m_ht_2   =[100000 for _ in range(period)]
+    m_g_hp_1 =[0 for _ in range(period)]
+    m_g_hp_2 =[100000 for _ in range(period)]
+    m_g_ghp_1=[0 for _ in range(period)]
+    m_g_ghp_2=[100000 for _ in range(period)]
+    m_g_mp_1 =[0 for _ in range(period)]
+    m_g_mp_2 =[500000 for _ in range(period)]
 
-    # t_cdu_1 = [65 for _ in range(period)]
-    # t_cdu_2 = [95 for _ in range(period)]
+    m_q_hp_1 =[0 for _ in range(period)]
+    m_q_hp_2 =[300000 for _ in range(period)]
+    m_q_ghp_1=[0 for _ in range(period)]
+    m_q_ghp_2=[300000 for _ in range(period)]
+    m_ct_1 =[-300000 for _ in range(period)]
+    m_ct_2 =[300000 for _ in range(period)]
+    m_q_mp_1 =[0 for _ in range(period)]
+    m_q_mp_2 =[1000000 for _ in range(period)]
 
-    # t_he_1  = [40 for _ in range(period)]
-    # t_he_2  = [95 for _ in range(period)]
 
-    # t_ct_1  = [20 for _ in range(period)]
-    # t_ct_2  = [95 for _ in range(period)]
-    #m_el_1,m_el_2 =10000,100000
-    #t_el_1 = [50 for _ in range(period+1)]
-    #t_el_2 = [80 for _ in range(period+1)]
+    t_ht_1  = [t_ht_min for _ in range(period)]
+    t_ht_2  = [t_ht_max for _ in range(period)]
+    t_fc_1  = [t_fc_min for _ in range(period)]
+    t_fc_2  = [t_fc_max for _ in range(period)]
+    t_g_hp_1= [t_g_hp_min for _ in range(period)]
+    t_g_hp_2= [t_g_hp_max for _ in range(period)]
+    t_g_ghp_1=[t_g_ghp_min for _ in range(period)]
+    t_g_ghp_2=[t_g_ghp_max for _ in range(period)]
+    t_g_mp_1 = [t_g_mp_min for _ in range(period)]
+    t_g_mp_2 = [t_g_mp_max for _ in range(period)]
+    t_g_mp_r_1 = [t_g_mp_r_min for _ in range(period)]
+    t_g_mp_r_2 = [t_g_mp_r_max for _ in range(period)]
+
+    t_q_hp_1 = [t_q_hp_min for _ in range(period)]
+    t_q_hp_2 = [t_q_hp_max for _ in range(period)]
+    t_q_ghp_1= [t_q_ghp_min for _ in range(period)]
+    t_q_ghp_2= [t_q_ghp_max for _ in range(period)]
+    t_ct_1 = [t_ct_min for _ in range(period)]
+    t_ct_2 = [t_ct_max for _ in range(period)]
+    t_q_mp_1 = [t_q_mp_min for _ in range(period)]
+    t_q_mp_2 = [t_q_mp_max for _ in range(period)]
+    t_q_mp_r_1 = [t_q_mp_r_min for _ in range(period)]
+    t_q_mp_r_2 = [t_q_mp_r_max for _ in range(period)]
+
     n =1
     #gap = ggggap
     obj = 100000000000
     max_err=[]
     mean_err=[]
     slack_num_list=[]
-    #error = [1 for _ in range(period*nn*3)]
+
     error = {
-        # "H_ht_ht"   : [0.1 for _ in range(period)],
         "H_fc_fc"   : [0.1 for _ in range(period)],
-        "H_fc_ht"   : [0.1 for _ in range(period)],
-        # "H_fc_cdu"  : [0.1 for _ in range(period)],
-        # "H_cdu_cdu" : [0.1 for _ in range(period)],
-        # "H_cdu_ht"  : [0.1 for _ in range(period)],
-        # "H_he_he"   : [0.1 for _ in range(period)],
-        # "H_he_cdu"  : [0.1 for _ in range(period)],
-        # "H_ct_cdu"  : [0.1 for _ in range(period)],
-        # "H_ct_ct"   : [0.1 for _ in range(period)]
+        "H_fc_mp"   : [0.1 for _ in range(period)],
+        'H_ht_ht'   : [0.1 for _ in range(period)],
+        'H_ht_mp'   : [0.1 for _ in range(period)],
+        'H_g_hp_hp' : [0.1 for _ in range(period)],
+        'H_g_hp_mp' : [0.1 for _ in range(period)],
+        'H_g_ghp_ghp':[0.1 for _ in range(period)],
+        'H_g_ghp_mp':[0.1 for _ in range(period)],
+        'H_g_mp_mp' : [0.1 for _ in range(period)],
+        'H_g_mp_mp_r':[0.1 for _ in range(period)],
+
+        'H_q_hp_hp' : [0.1 for _ in range(period)],
+        'H_q_hp_mp' : [0.1 for _ in range(period)],
+        'H_q_ghp_ghp':[0.1 for _ in range(period)],
+        'H_q_ghp_mp': [0.1 for _ in range(period)],
+        'H_q_mp_mp' : [0.1 for _ in range(period)],
+        'H_q_mp_mp_r':[0.1 for _ in range(period)],
+        'H_ct_ct'   : [0.1 for _ in range(period)],
+        'H_ct_mp'   : [0.1 for _ in range(period)],
+
     }
     M = {
-        # "m_ht"   :[m_ht_1,m_ht_2],
         "m_fc"   :[m_fc_1,m_fc_2],
-        # "m_cdu"  :[m_cdu_1,m_cdu_2],
-        # "m_he"   :[m_he_1,m_he_2],
-        # "m_ct"   :[m_ct_1,m_ct_2]
+        'm_ht'   :[m_ht_1,m_ht_2],
+        'm_g_mp' :[m_g_mp_1,m_g_mp_2],
+        'm_g_hp' :[m_g_hp_1,m_g_hp_2],
+        'm_g_ghp':[m_g_ghp_1,m_g_ghp_2],
+
+        'm_q_hp' :[m_q_hp_1,m_q_hp_2],
+        'm_q_ghp':[m_q_ghp_1,m_q_ghp_2],
+        'm_q_mp' :[m_q_mp_1,m_q_mp_2],
+        'm_ct'   :[m_ct_1,m_ct_2],
+
     }
     T = {
         "t_ht"   :[t_ht_1,t_ht_2],
         "t_fc"   :[t_fc_1,t_fc_2],
-        # "t_cdu"  :[t_cdu_1,t_cdu_2],
-        # "t_he"   :[t_he_1,t_he_2],
-        # "t_ct"   :[t_ct_1,t_ct_2]
+        "t_g_mp" :[t_g_mp_1,t_g_mp_2],
+        "t_g_hp" :[t_g_hp_1,t_g_hp_2],
+        "t_g_ghp":[t_g_ghp_1,t_g_ghp_2],
+        't_g_mp_r':[t_g_mp_r_1,t_g_mp_r_2],
+
+        "t_q_hp" :[t_q_hp_1,t_q_hp_2],
+        "t_q_ghp":[t_q_ghp_1,t_q_ghp_2],
+        "t_q_mp" :[t_q_mp_1,t_q_mp_2],
+        "t_ct"   :[t_ct_1,t_ct_2],
+        't_q_mp_r':[t_q_mp_r_1,t_q_mp_r_2],
+        
+
     }
     start =time.time()
     M,T,res_M_T,H,error,ans,slack_num = opt(M,T,error,0,1,1)
@@ -126,12 +197,13 @@ if __name__ == '__main__':
             # to_csv(res_last,"test")
             # to_csv(error_last,"error")
             print("g")
+            break
             exit(0)
         # if obj == 404:
         #     break
         #res = res_new
-        M_l,T_l = M,T
-        M,T = bound_con(period,H,gap,M,T,res_M_T,n,0.8)
+        M_l,T_l,res_M_T_l,H_l = M,T,res_M_T,H
+        M,T = bound_con(period,H,gap,M,T,res_M_T,n,0.9)
         #print(t_el_1,t_el_2)
         obj_print.append(res['objective'])
         errorl = [abs(ee[i]) for ee in error.values() for i in range(len(ee))]
@@ -141,11 +213,15 @@ if __name__ == '__main__':
         slack_num_list.append(slack_num)
         if max(errorl)>0.7:
             pd.DataFrame(error).to_csv("res_for_test/errorbig.csv")
+            # exit(0)
             # to_csv(error,"errorbig")
             #input()
         print(max_err)
         print(mean_err)
         print(slack_num_list)
+        pd.DataFrame(res).to_csv("res_for_test/test.csv")
+        pd.DataFrame(error).to_csv("res_for_test/error.csv")
+        # exit(0)
         n += 1
         print(obj_print)
     print("n:")
@@ -155,7 +231,7 @@ if __name__ == '__main__':
 
 
     # #计算一次fix后的可行解
-    M,T,res_M_T,H,error,res,slack_num = opt(M_l,T_l,error,1,res_M_T,H)
+    M,T,res_M_T,H,error,res,slack_num = opt(M_l,T_l,error,1,res_M_T_l,H_l)
     errorl = [abs(ee[i]) for ee in error.values() for i in range(len(ee))]
     #error = [abs(error[i])for i in range(len(error))]
     max_err.append(max(errorl))
