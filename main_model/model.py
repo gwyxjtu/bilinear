@@ -2,7 +2,7 @@
 Author: guo_idpc
 Date: 2023-02-23 19:15:43
 LastEditors: guo_idpc 867718012@qq.com
-LastEditTime: 2023-03-01 21:52:53
+LastEditTime: 2023-03-02 11:35:21
 FilePath: /bilinear/main_model/model.py
 Description: 人一生会遇到约2920万人,两个人相爱的概率是0.000049,所以你不爱我,我不怪你.
 
@@ -137,17 +137,27 @@ def opt(M,T,error,fix,res_M_T,H):
 
     period = len(g_demand)
     # 固定设备容量
-    area_pv = 50000#m.addVar(vtype=GRB.CONTINUOUS, lb=0, ub = 2000, name=f"area_pv")
+    area_pv = 5000#m.addVar(vtype=GRB.CONTINUOUS, lb=0, ub = 2000, name=f"area_pv")
     hst = 200#m.addVar(vtype=GRB.CONTINUOUS, lb=0, ub = 2000, name=f"hst")
 
-    M_ht = 500000#m.addVar(vtype=GRB.CONTINUOUS, lb=m_ht_1,ub=m_ht_2, name="m_ht") # capacity of hot water tank
-    M_ct = 500000
+    # M_ht = 50000#m.addVar(vtype=GRB.CONTINUOUS, lb=m_ht_1,ub=m_ht_2, name="m_ht") # capacity of hot water tank
+    # M_ct = 50000
+    # fc_max = 1800
+    # el_max = 1000
+    # hp_max = 300
+    # ghp_max = 100
+    # pump_max = 10000
+    # Create a new model    
+
+
+
+    M_ht = 5000#m.addVar(vtype=GRB.CONTINUOUS, lb=m_ht_1,ub=m_ht_2, name="m_ht") # capacity of hot water tank
+    M_ct = 5000
     fc_max = 3000
     el_max = 1000
     hp_max = 1000
     ghp_max = 3000
     pump_max = 10000
-    # Create a new model    
     m = gp.Model("bilinear")
 
 
@@ -356,18 +366,17 @@ def opt(M,T,error,fix,res_M_T,H):
             
         #print(piece_count)
     elif fix == 1:
-        # m.addConstr(m_cdu == res_M_T['m_cdu'])
-        # m.addConstr(m_he == res_M_T['m_he'])
-        m.addConstrs(m_fc[i] == res_M_T['m_fc'][i] for i in range(period))
-        m.addConstrs(m_g_hp[i] == res_M_T['m_g_hp'][i] for i in range(period))
-        m.addConstrs(m_g_ghp[i] == res_M_T['m_g_ghp'][i] for i in range(period))
-        m.addConstrs(m_ht[i] == res_M_T['m_ht'][i] for i in range(period))
-        m.addConstrs(m_g_mp[i] == res_M_T['m_g_mp'][i] for i in range(period))
 
-        m.addConstrs(m_q_hp[i] == res_M_T['m_q_hp'][i] for i in range(period))
-        m.addConstrs(m_q_ghp[i] == res_M_T['m_q_ghp'][i] for i in range(period))
-        m.addConstrs(m_ct[i] == res_M_T['m_ct'][i] for i in range(period))
-        m.addConstrs(m_q_mp[i] == res_M_T['m_q_mp'][i] for i in range(period))
+        # m.addConstrs(m_fc[i] == res_M_T['m_fc'][i] for i in range(period))
+        # m.addConstrs(m_g_hp[i] == res_M_T['m_g_hp'][i] for i in range(period))
+        # m.addConstrs(m_g_ghp[i] == res_M_T['m_g_ghp'][i] for i in range(period))
+        # m.addConstrs(m_ht[i] == res_M_T['m_ht'][i] for i in range(period))
+        # m.addConstrs(m_g_mp[i] == res_M_T['m_g_mp'][i] for i in range(period))
+
+        # m.addConstrs(m_q_hp[i] == res_M_T['m_q_hp'][i] for i in range(period))
+        # m.addConstrs(m_q_ghp[i] == res_M_T['m_q_ghp'][i] for i in range(period))
+        # m.addConstrs(m_ct[i] == res_M_T['m_ct'][i] for i in range(period))
+        # m.addConstrs(m_q_mp[i] == res_M_T['m_q_mp'][i] for i in range(period))
         
         for i in range(period):
             # m.addConstr(g_fc[i] == c_kWh * m_fc[i]*(t_fc[i] - t_ht[i]))
@@ -455,7 +464,7 @@ def opt(M,T,error,fix,res_M_T,H):
 
 
     m.addConstr(gp.quicksum(p_pur)<=(1-cer)*(sum(ele_load)+sum(q_demand)/5+sum(g_demand)/0.9+sum(water_load)/0.9))
-    # m.addConstr(gp.quicksum(g_ghp)<=gp.quicksum(q_ghp)+gp.quicksum(p_ghp))
+    m.addConstr(gp.quicksum(g_ghp)<=gp.quicksum(q_ghp)+gp.quicksum(p_ghp))
     for i in range(period):
         #m.addConstr(p_pur[i]==0)
 
@@ -541,7 +550,7 @@ def opt(M,T,error,fix,res_M_T,H):
         m.addConstr(p_pv[i]==k_pv*area_pv*r[i])
         # m.addConstr(t_he[i] >= 30)###
         # m.addConstr(t_cdu[i]<=95)###
-        if with_rlt == 1:
+        if with_rlt == 1 and fix != 1:
             m.addConstr(H_fc_fc[i]>=m_fc[i]*t_fc_1[i])
             m.addConstr(H_fc_fc[i]<=m_fc[i]*t_fc_2[i])
             m.addConstr(H_fc_mp[i]>=m_fc[i]*t_g_mp_r_1[i])
@@ -608,7 +617,7 @@ def opt(M,T,error,fix,res_M_T,H):
     m.params.NonConvex = 2
     m.params.MIPGap = 0.01
     if nn != 1:
-        m.params.MIPGap = 0.02
+        m.params.MIPGap = 0.05
     # m.optimize()
     #m.computeIIS()
     try:
