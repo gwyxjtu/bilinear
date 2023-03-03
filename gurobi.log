@@ -1,0 +1,12 @@
+
+Gurobi 9.5.0 (win64, Python) logging started Thu Mar  2 20:51:53 2023
+
+Set parameter Username
+Set parameter LogFile to value "gurobi.log"
+Academic license - for non-commercial use only - expires 2024-02-25
+
+Gurobi 9.0.3 (win64, Python) logging started Thu Mar  2 20:52:16 2023
+
+Using license file C:\Users\hp\gurobi.lic
+Set parameter LogFile to value gurobi.log
+Academic license - for non-commercial use only

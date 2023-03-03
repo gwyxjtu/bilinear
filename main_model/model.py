@@ -1,8 +1,8 @@
 '''
 Author: guo_idpc
 Date: 2023-02-23 19:15:43
-LastEditors: guo_idpc 867718012@qq.com
-LastEditTime: 2023-03-02 11:35:21
+LastEditors: guo_win 867718012@qq.com
+LastEditTime: 2023-03-02 21:34:40
 FilePath: /bilinear/main_model/model.py
 Description: 人一生会遇到约2920万人,两个人相爱的概率是0.000049,所以你不爱我,我不怪你.
 
@@ -80,17 +80,17 @@ def opt(M,T,error,fix,res_M_T,H):
 
 
     t_ht_min = 30
-    t_ht_max = 80
-    t_fc_min = 40
+    t_ht_max = 65
+    t_fc_min = 30
     t_fc_max = 65
     t_g_hp_min = 30
     t_g_hp_max = 65
     t_g_ghp_min = 30
-    t_g_ghp_max = 60
+    t_g_ghp_max = 65
     t_g_mp_min = 30
-    t_g_mp_max = 80
-    t_g_mp_r_min = 20
-    t_g_mp_r_max = 80
+    t_g_mp_max = 65
+    t_g_mp_r_min = 10
+    t_g_mp_r_max = 80   
     t_ct_min = 5
     t_ct_max = 20
 
@@ -151,8 +151,8 @@ def opt(M,T,error,fix,res_M_T,H):
 
 
 
-    M_ht = 5000#m.addVar(vtype=GRB.CONTINUOUS, lb=m_ht_1,ub=m_ht_2, name="m_ht") # capacity of hot water tank
-    M_ct = 5000
+    M_ht = 500000#m.addVar(vtype=GRB.CONTINUOUS, lb=m_ht_1,ub=m_ht_2, name="m_ht") # capacity of hot water tank
+    M_ct = 500000
     fc_max = 3000
     el_max = 1000
     hp_max = 1000

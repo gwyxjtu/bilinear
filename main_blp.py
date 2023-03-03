@@ -1,8 +1,8 @@
 '''
 Author: guo_idpc
 Date: 2023-02-23 17:19:03
-LastEditors: guo_idpc 867718012@qq.com
-LastEditTime: 2023-03-02 13:15:19
+LastEditors: guo_win 867718012@qq.com
+LastEditTime: 2023-03-03 09:44:54
 FilePath: /bilinear/main_blp.py
 Description: 人一生会遇到约2920万人,两个人相爱的概率是0.000049,所以你不爱我,我不怪你.
 
@@ -46,18 +46,18 @@ def plot_for_test(error_max,error_min,obj_print,slack_num_list,res):
     # exit(0)
 
 if __name__ == '__main__':
-    t_ht_min = 40
+    t_ht_min = 30
     t_ht_max = 65
-    t_fc_min = 50
+    t_fc_min = 30
     t_fc_max = 65
-    t_g_hp_min = 40
-    t_g_hp_max = 55
-    t_g_ghp_min = 40
-    t_g_ghp_max = 50
+    t_g_hp_min = 30
+    t_g_hp_max = 65
+    t_g_ghp_min = 30
+    t_g_ghp_max = 35
     t_g_mp_min = 40
     t_g_mp_max = 65
     t_g_mp_r_min = 20
-    t_g_mp_r_max = 60   
+    t_g_mp_r_max = 80   
     t_ct_min = 5
     t_ct_max = 20
 
@@ -226,7 +226,7 @@ if __name__ == '__main__':
         pd.DataFrame(res).to_csv("res_for_test/test.csv")
         pd.DataFrame(error).to_csv("res_for_test/error.csv")
         if bilinear == 2:
-            send('双线性计算完毕',receivers,'双线性算法',['res_for_test/test.csv'])
+            # send('双线性计算完毕',receivers,'双线性算法',['res_for_test/test.csv'])
             exit(0)
         n += 1
         print(obj_print)
@@ -253,4 +253,4 @@ if __name__ == '__main__':
     plot_for_test(max_err,mean_err,obj_print,slack_num_list,res)
     end=time.time()
     print('Running time: %s Seconds'%(end-start))
-    send('计算完毕',receivers,str(obj_print)+str(max_err)+str(mean_err),['res_for_test/test.csv','img/error.png','img/obj.png'])
+    # send('计算完毕',receivers,str(obj_print)+str(max_err)+str(mean_err),['res_for_test/test.csv','img/error.png','img/obj.png'])
