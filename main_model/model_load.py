@@ -2,7 +2,7 @@
 Author: guo_idpc
 Date: 2023-02-24 15:03:18
 LastEditors: guo_idpc 867718012@qq.com
-LastEditTime: 2023-03-02 13:17:32
+LastEditTime: 2023-03-03 18:18:57
 FilePath: /bilinear/main_model/model_load.py
 Description: 人一生会遇到约2920万人,两个人相爱的概率是0.000049,所以你不爱我,我不怪你.
 
@@ -12,7 +12,7 @@ import pandas as pd
 import csv
 cer = 0.1
 days=4
-nn = 3
+nn = 1
 with_rlt = 1
 
 
@@ -105,7 +105,7 @@ r_solar = r_solar[-8:]+r_solar[:-8]
 
 
 g_demand = [g_demand[i]/2 for i in range(len(ele_load))]
-# g_demand = [1000 if g_demand[i] >=0 else 0 for i in range(len(ele_load))]
+g_demand = [1000 if g_demand[i] >=0 else 0 for i in range(len(ele_load))]
 q_demand = [q_demand[i]/2 for i in range(len(ele_load))]
 ele_load = [ele_load[i]/2 for i in range(len(ele_load))]
 water_load = [water_load[i]/2 for i in range(len(ele_load))]

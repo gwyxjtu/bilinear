@@ -2,7 +2,7 @@
 Author: guo_idpc
 Date: 2023-02-23 17:19:03
 LastEditors: guo_idpc 867718012@qq.com
-LastEditTime: 2023-03-02 13:15:19
+LastEditTime: 2023-03-03 23:19:52
 FilePath: /bilinear/main_blp.py
 Description: 人一生会遇到约2920万人,两个人相爱的概率是0.000049,所以你不爱我,我不怪你.
 
@@ -46,28 +46,31 @@ def plot_for_test(error_max,error_min,obj_print,slack_num_list,res):
     # exit(0)
 
 if __name__ == '__main__':
-    t_ht_min = 40
-    t_ht_max = 65
-    t_fc_min = 50
+    t_ht_min = 30
+    t_ht_max = 80
+    t_fc_min = 55
     t_fc_max = 65
-    t_g_hp_min = 40
-    t_g_hp_max = 55
-    t_g_ghp_min = 40
+    t_g_hp_min = 45
+    t_g_hp_max = 50
+    t_g_ghp_min = 45
     t_g_ghp_max = 50
     t_g_mp_min = 40
     t_g_mp_max = 65
     t_g_mp_r_min = 20
-    t_g_mp_r_max = 60   
+    t_g_mp_r_max = 40
     t_ct_min = 5
     t_ct_max = 20
 
+
+
+
     t_q_hp_min = 5
-    t_q_hp_max = 20
+    t_q_hp_max = 10
     t_q_ghp_min = 5
-    t_q_ghp_max = 20
+    t_q_ghp_max = 10
     t_q_mp_min = 5
-    t_q_mp_max = 20
-    t_q_mp_r_min = 5
+    t_q_mp_max = 15
+    t_q_mp_r_min = 20
     t_q_mp_r_max = 30
 
     period = len(g_demand)
@@ -83,13 +86,13 @@ if __name__ == '__main__':
     m_g_mp_2 =[500000 for _ in range(period)]
 
     m_q_hp_1 =[0 for _ in range(period)]
-    m_q_hp_2 =[300000 for _ in range(period)]
+    m_q_hp_2 =[100000 for _ in range(period)]
     m_q_ghp_1=[0 for _ in range(period)]
-    m_q_ghp_2=[300000 for _ in range(period)]
-    m_ct_1 =[-300000 for _ in range(period)]
-    m_ct_2 =[300000 for _ in range(period)]
+    m_q_ghp_2=[100000 for _ in range(period)]
+    m_ct_1 =[-100000 for _ in range(period)]
+    m_ct_2 =[100000 for _ in range(period)]
     m_q_mp_1 =[0 for _ in range(period)]
-    m_q_mp_2 =[1000000 for _ in range(period)]
+    m_q_mp_2 =[5000000 for _ in range(period)]
 
 
     t_ht_1  = [t_ht_min for _ in range(period)]
@@ -199,7 +202,7 @@ if __name__ == '__main__':
             pd.DataFrame(error_last).to_csv("res_for_test/error.csv")
             # to_csv(res_last,"test")
             # to_csv(error_last,"error")
-            send('寄了',receivers,'松弛迭代',['res_for_test/test.csv',"res_for_test/error.csv"])
+            # send('寄了',receivers,'松弛迭代',['res_for_test/test.csv',"res_for_test/error.csv"])
             print("g")
             break
             exit(0)
@@ -226,7 +229,7 @@ if __name__ == '__main__':
         pd.DataFrame(res).to_csv("res_for_test/test.csv")
         pd.DataFrame(error).to_csv("res_for_test/error.csv")
         if bilinear == 2:
-            send('双线性计算完毕',receivers,'双线性算法',['res_for_test/test.csv'])
+            # send('双线性计算完毕',receivers,'双线性算法',['res_for_test/test.csv'])
             exit(0)
         n += 1
         print(obj_print)

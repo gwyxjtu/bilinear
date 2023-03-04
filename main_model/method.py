@@ -2,7 +2,7 @@
 Author: guo_idpc
 Date: 2023-02-23 19:34:32
 LastEditors: guo_idpc 867718012@qq.com
-LastEditTime: 2023-03-02 11:18:17
+LastEditTime: 2023-03-03 17:43:40
 FilePath: /bilinear/main_model/method.py
 Description: 人一生会遇到约2920万人,两个人相爱的概率是0.000049,所以你不爱我,我不怪你.
 
@@ -56,7 +56,7 @@ def piece_McCormick(model,H,x,y,x1,x2,y1,y2,piece_count,error,i_number,H_name,n)
     #print(piece_count)
     #print(error)
     c = [model.addVar(vtype=GRB.BINARY, lb=0,ub=1,name=f"c{t}") for t in range(n)]
-    if abs(error[H_name][i_number])<ggggap and n == 1:
+    if abs(error[H_name][i_number])<ggggap or n == 1:
     #if H_name != "H_ct_ct":
             #break
         #print((piece_count%3)*period+int(piece_count/3))

@@ -2,7 +2,7 @@
 Author: guo_idpc
 Date: 2023-02-23 19:15:43
 LastEditors: guo_idpc 867718012@qq.com
-LastEditTime: 2023-03-02 11:35:21
+LastEditTime: 2023-03-03 18:29:43
 FilePath: /bilinear/main_model/model.py
 Description: 人一生会遇到约2920万人,两个人相爱的概率是0.000049,所以你不爱我,我不怪你.
 
@@ -79,29 +79,20 @@ def opt(M,T,error,fix,res_M_T,H):
     k_pump = 0.6/1000#0.6/1000
 
 
-    t_ht_min = 30
-    t_ht_max = 80
-    t_fc_min = 40
+    t_ht_min = 40
+    t_ht_max = 65
+    t_fc_min = 55
     t_fc_max = 65
-    t_g_hp_min = 30
-    t_g_hp_max = 65
-    t_g_ghp_min = 30
-    t_g_ghp_max = 60
-    t_g_mp_min = 30
-    t_g_mp_max = 80
+    t_g_hp_min = 50
+    t_g_hp_max = 55
+    t_g_ghp_min = 45
+    t_g_ghp_max = 50
+    t_g_mp_min = 40
+    t_g_mp_max = 65
     t_g_mp_r_min = 20
-    t_g_mp_r_max = 80
+    t_g_mp_r_max = 40
     t_ct_min = 5
     t_ct_max = 20
-
-    t_q_hp_min = 5
-    t_q_hp_max = 20
-    t_q_ghp_min = 5
-    t_q_ghp_max = 20
-    t_q_mp_min = 5
-    t_q_mp_max = 20
-    t_q_mp_r_min = 5
-    t_q_mp_r_max = 30
 
     c = 4200 # J/kg*C
     c_kWh = 4200/3.6/1000000
@@ -219,8 +210,8 @@ def opt(M,T,error,fix,res_M_T,H):
     # H_ht_ht = [m.addVar(vtype=GRB.CONTINUOUS,lb=0, name=f"H_ht_ht{t}") for t in range(period)]
     H_fc_fc = [m.addVar(vtype=GRB.CONTINUOUS,lb=0, name=f"H_fc_fc{t}") for t in range(period)]
     H_fc_mp = [m.addVar(vtype=GRB.CONTINUOUS,lb=0, name=f"H_fc_mp{t}") for t in range(period)]
-    H_ht_ht = [m.addVar(vtype=GRB.CONTINUOUS,lb=0, name=f"H_ht_ht{t}") for t in range(period)]
-    H_ht_mp = [m.addVar(vtype=GRB.CONTINUOUS,lb=0, name=f"H_ht_mp{t}") for t in range(period)]
+    H_ht_ht = [m.addVar(vtype=GRB.CONTINUOUS,lb=-GRB.INFINITY, name=f"H_ht_ht{t}") for t in range(period)]
+    H_ht_mp = [m.addVar(vtype=GRB.CONTINUOUS,lb=-GRB.INFINITY, name=f"H_ht_mp{t}") for t in range(period)]
     H_g_hp_hp = [m.addVar(vtype=GRB.CONTINUOUS,lb=0, name=f"H_g_hp_hp{t}") for t in range(period)]
     H_g_hp_mp = [m.addVar(vtype=GRB.CONTINUOUS,lb=0, name=f"H_g_hp_mp{t}") for t in range(period)]
     H_g_ghp_ghp = [m.addVar(vtype=GRB.CONTINUOUS,lb=0, name=f"H_g_ghp_ghp{t}") for t in range(period)]
@@ -228,8 +219,8 @@ def opt(M,T,error,fix,res_M_T,H):
     H_g_mp_mp = [m.addVar(vtype=GRB.CONTINUOUS,lb=0, name=f"H_g_mp_mp{t}") for t in range(period)]
     H_g_mp_mp_r = [m.addVar(vtype=GRB.CONTINUOUS,lb=0, name=f"H_g_mp_mp_r{t}") for t in range(period)]
 
-    H_ct_ct = [m.addVar(vtype=GRB.CONTINUOUS,lb=0, name=f"H_ct_ct{t}") for t in range(period)]
-    H_ct_mp = [m.addVar(vtype=GRB.CONTINUOUS,lb=0, name=f"H_ct_mp{t}") for t in range(period)]
+    H_ct_ct = [m.addVar(vtype=GRB.CONTINUOUS,lb=-GRB.INFINITY, name=f"H_ct_ct{t}") for t in range(period)]
+    H_ct_mp = [m.addVar(vtype=GRB.CONTINUOUS,lb=-GRB.INFINITY, name=f"H_ct_mp{t}") for t in range(period)]
     H_q_hp_hp = [m.addVar(vtype=GRB.CONTINUOUS,lb=0, name=f"H_q_hp_hp{t}") for t in range(period)]
     H_q_hp_mp = [m.addVar(vtype=GRB.CONTINUOUS,lb=0, name=f"H_q_hp_mp{t}") for t in range(period)]
     H_q_ghp_ghp = [m.addVar(vtype=GRB.CONTINUOUS,lb=0, name=f"H_q_ghp_ghp{t}") for t in range(period)]
@@ -826,5 +817,10 @@ def opt(M,T,error,fix,res_M_T,H):
     print(max([g_fc[i].X for i in range(period)]))
     print('p_fc:')
     print(max([p_fc[i].X for i in range(period)]))
+    
+    print('g_ht:')
+    print(max([g_ht[i].X for i in range(period)]))
+    print('q_ct:')
+    print(max([q_ct[i].X for i in range(period)]))
     print("-----")
     return M,T,res_M_T,H,error,ans,slack_num
