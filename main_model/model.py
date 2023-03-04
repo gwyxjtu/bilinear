@@ -2,7 +2,7 @@
 Author: guo_idpc
 Date: 2023-02-23 19:15:43
 LastEditors: guo_idpc 867718012@qq.com
-LastEditTime: 2023-03-04 17:28:26
+LastEditTime: 2023-03-04 21:31:29
 FilePath: /bilinear/main_model/model.py
 Description: 人一生会遇到约2920万人,两个人相爱的概率是0.000049,所以你不爱我,我不怪你.
 
@@ -79,19 +79,21 @@ def opt():
     k_pump = 0.6/1000#0.6/1000
 
     # 总管的温度应当固定
-    t_g_mp = 60
+    t_g_mp = 45
     t_q_mp = 7
     
     t_ht_min = 40
     t_ht_max = 65
-    t_fc_min = 50
+    t_fc_min = 55
     t_fc_max = 65
     t_g_hp_min = 40
-    t_g_hp_max = 55
-    t_g_ghp_min = 40
-    t_g_ghp_max = 50
+    t_g_hp_max = 60
+    t_g_ghp_min = 35
+    t_g_ghp_max = 55
+    t_g_mp_min = 45
+    t_g_mp_max = 50
     t_g_mp_r_min = 20
-    t_g_mp_r_max = 60   
+    t_g_mp_r_max = 80   
     t_ct_min = 5
     t_ct_max = 20
 
@@ -99,6 +101,8 @@ def opt():
     t_q_hp_max = 20
     t_q_ghp_min = 5
     t_q_ghp_max = 20
+    t_q_mp_min = 5
+    t_q_mp_max = 7
     t_q_mp_r_min = 5
     t_q_mp_r_max = 30
 
@@ -160,13 +164,13 @@ def opt():
     t_ht = [m.addVar(vtype=GRB.CONTINUOUS, lb=t_ht_min, ub = t_ht_max, name=f"t_ht{t}") for t in range(period)] # temperature of hot water tank
     t_g_hp = [m.addVar(vtype=GRB.CONTINUOUS, lb=t_g_hp_min,ub=t_g_hp_max,name=f"t_g_hp{t}") for t in range(period)] # waste heat pump heat sullpy temperature
     t_g_ghp = [m.addVar(vtype=GRB.CONTINUOUS, lb=t_g_ghp_min,ub = t_g_ghp_max, name=f"t_g_ghp{t}") for t in range(period)] # ground heat pump heat sullpy temperature
-    # t_g_mp = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"t_g_mp{t}") for t in range(period)] # heat sullpy main pipe temperature
+    t_g_mp = [m.addVar(vtype=GRB.CONTINUOUS, lb=t_g_mp_min,ub = t_g_mp_max name=f"t_g_mp{t}") for t in range(period)] # heat sullpy main pipe temperature
     t_g_mp_r = [m.addVar(vtype=GRB.CONTINUOUS, lb=t_g_mp_r_min,ub = t_g_mp_r_max, name=f"t_g_mp_r{t}") for t in range(period)] # heat sullpy main pipe return temperature
 
     t_ct = [m.addVar(vtype=GRB.CONTINUOUS, lb=t_ct_min,ub = t_ct_max, name=f"t_ct{t}") for t in range(period)] # cold water tank temperature
     t_q_hp = [m.addVar(vtype=GRB.CONTINUOUS, lb=t_q_hp_min,ub = t_q_hp_max, name=f"t_q_hp{t}") for t in range(period)] # waste heat pump cooling supply temperature
     t_q_ghp = [m.addVar(vtype=GRB.CONTINUOUS, lb=t_q_ghp_min,ub = t_q_ghp_max, name=f"t_q_ghp{t}") for t in range(period)] # ground heat pump cooling supply temperature
-    # t_q_mp = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"t_q_mp{t}") for t in range(period)] # cooling supply main pipe temperature
+    t_q_mp = [m.addVar(vtype=GRB.CONTINUOUS, lb=t_q_mp_min,ub=t_q_mp_max, name=f"t_q_mp{t}") for t in range(period)] # cooling supply main pipe temperature
     t_q_mp_r = [m.addVar(vtype=GRB.CONTINUOUS, lb=t_q_mp_r_min,ub = t_q_mp_r_max, name=f"t_q_mp_r{t}") for t in range(period)] # cooling supply main pipe return temperature
 
 

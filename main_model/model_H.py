@@ -2,7 +2,7 @@
 Author: guo_idpc
 Date: 2023-03-04 19:13:25
 LastEditors: guo_idpc 867718012@qq.com
-LastEditTime: 2023-03-04 19:37:40
+LastEditTime: 2023-03-04 20:12:30
 FilePath: /bilinear/main_model/model_H.py
 Description: 人一生会遇到约2920万人,两个人相爱的概率是0.000049,所以你不爱我,我不怪你.
 
@@ -79,19 +79,21 @@ def opt():
     k_pump = 0.6/1000#0.6/1000
 
     # 总管的温度应当固定
-    t_g_mp = 60
+    t_g_mp = 50
     t_q_mp = 7
     
-    t_ht_min = 40
+    t_ht_min = 30
     t_ht_max = 65
-    t_fc_min = 50
+    t_fc_min = 30
     t_fc_max = 65
-    t_g_hp_min = 40
-    t_g_hp_max = 55
-    t_g_ghp_min = 40
-    t_g_ghp_max = 50
+    t_g_hp_min = 30
+    t_g_hp_max = 65
+    t_g_ghp_min = 30
+    t_g_ghp_max = 55
+    t_g_mp_min = 40
+    t_g_mp_max = 65
     t_g_mp_r_min = 20
-    t_g_mp_r_max = 60   
+    t_g_mp_r_max = 80   
     t_ct_min = 5
     t_ct_max = 20
 
@@ -99,8 +101,11 @@ def opt():
     t_q_hp_max = 20
     t_q_ghp_min = 5
     t_q_ghp_max = 20
+    t_q_mp_min = 5
+    t_q_mp_max = 20
     t_q_mp_r_min = 5
     t_q_mp_r_max = 30
+
 
     m_g_pipe_max = 100000
     m_q_pipe_max = 300000
@@ -519,55 +524,62 @@ def opt():
 
 
         m.addConstr(p_pv[i]==k_pv*area_pv*r[i])
-        # m.addConstr(t_he[i] >= 30)###
-        # m.addConstr(t_cdu[i]<=95)###
-        # if with_rlt == 1 and fix != 1:
-        #     m.addConstr(H_fc_fc[i]>=m_fc[i]*t_fc_1[i])
-        #     m.addConstr(H_fc_fc[i]<=m_fc[i]*t_fc_2[i])
-        #     m.addConstr(H_fc_mp[i]>=m_fc[i]*t_g_mp_r_1[i])
-        #     m.addConstr(H_fc_mp[i]<=m_fc[i]*t_g_mp_r_2[i])
-        #     m.addConstr(H_g_hp_hp[i]>=m_g_hp[i]*t_g_hp_1[i])
-        #     m.addConstr(H_g_hp_hp[i]<=m_g_hp[i]*t_g_hp_2[i])
-        #     m.addConstr(H_g_hp_mp[i]>=m_g_hp[i]*t_g_mp_r_1[i])
-        #     m.addConstr(H_g_hp_mp[i]<=m_g_hp[i]*t_g_mp_r_2[i])
-        #     m.addConstr(H_g_ghp_ghp[i]>=m_g_ghp[i]*t_g_ghp_1[i])
-        #     m.addConstr(H_g_ghp_ghp[i]<=m_g_ghp[i]*t_g_ghp_2[i])
-        #     m.addConstr(H_g_ghp_mp[i]>=m_g_ghp[i]*t_g_mp_r_1[i])
-        #     m.addConstr(H_g_ghp_mp[i]<=m_g_ghp[i]*t_g_mp_r_2[i])
-        #     m.addConstr(H_ht_ht[i]>=m_ht[i]*t_ht_1[i])
-        #     m.addConstr(H_ht_ht[i]<=m_ht[i]*t_ht_2[i])
-        #     m.addConstr(H_ht_mp[i]>=m_ht[i]*t_g_mp_1[i])
-        #     m.addConstr(H_ht_mp[i]<=m_ht[i]*t_g_mp_2[i])
-        #     m.addConstr(H_g_mp_mp[i]>=m_g_mp[i]*t_g_mp_1[i])
-        #     m.addConstr(H_g_mp_mp[i]<=m_g_mp[i]*t_g_mp_2[i])
-        #     m.addConstr(H_g_mp_mp_r[i]>=m_g_mp[i]*t_g_mp_r_1[i])
-        #     m.addConstr(H_g_mp_mp_r[i]<=m_g_mp[i]*t_g_mp_r_2[i])
 
-        #     m.addConstr(H_ct_ct[i]>=m_ct[i]*t_ct_1[i])
-        #     m.addConstr(H_ct_ct[i]<=m_ct[i]*t_ct_2[i])
-        #     m.addConstr(H_ct_mp[i]>=m_ct[i]*t_q_mp_r_1[i])
-        #     m.addConstr(H_ct_mp[i]<=m_ct[i]*t_q_mp_r_2[i])
-        #     m.addConstr(H_q_hp_hp[i]>=m_q_hp[i]*t_q_hp_1[i])
-        #     m.addConstr(H_q_hp_hp[i]<=m_q_hp[i]*t_q_hp_2[i])
-        #     m.addConstr(H_q_hp_mp[i]>=m_q_hp[i]*t_q_mp_r_1[i])
-        #     m.addConstr(H_q_hp_mp[i]<=m_q_hp[i]*t_q_mp_r_2[i])
-        #     m.addConstr(H_q_ghp_ghp[i]>=m_q_ghp[i]*t_q_ghp_1[i])
-        #     m.addConstr(H_q_ghp_ghp[i]<=m_q_ghp[i]*t_q_ghp_2[i])
-        #     m.addConstr(H_q_ghp_mp[i]>=m_q_ghp[i]*t_q_mp_r_1[i])
-        #     m.addConstr(H_q_ghp_mp[i]<=m_q_ghp[i]*t_q_mp_r_2[i])
-        #     m.addConstr(H_q_mp_mp[i]>=m_q_mp[i]*t_q_mp_1[i])
-        #     m.addConstr(H_q_mp_mp[i]<=m_q_mp[i]*t_q_mp_2[i])
-        #     m.addConstr(H_q_mp_mp_r[i]>=m_q_mp[i]*t_q_mp_r_1[i])
-        #     m.addConstr(H_q_mp_mp_r[i]<=m_q_mp[i]*t_q_mp_r_2[i])
+        # if with_rlt == 1:
+        m.addConstr(H_fc_fc[i]>=m_fc[i]*t_fc_min)
+        m.addConstr(H_fc_fc[i]<=m_fc[i]*t_fc_max)
+        m.addConstr(H_fc_mp[i]>=m_fc[i]*t_g_mp_r_min)
+        m.addConstr(H_fc_mp[i]<=m_fc[i]*t_g_mp_r_max)
+        m.addConstr(H_g_hp_hp[i]>=m_g_hp[i]*t_g_hp_min)
+        m.addConstr(H_g_hp_hp[i]<=m_g_hp[i]*t_g_hp_max)
+        m.addConstr(H_g_hp_mp[i]>=m_g_hp[i]*t_g_mp_r_min)
+        m.addConstr(H_g_hp_mp[i]<=m_g_hp[i]*t_g_mp_r_max)
+        m.addConstr(H_g_ghp_ghp[i]>=m_g_ghp[i]*t_g_ghp_min)
+        m.addConstr(H_g_ghp_ghp[i]<=m_g_ghp[i]*t_g_ghp_max)
+        m.addConstr(H_g_ghp_mp[i]>=m_g_ghp[i]*t_g_mp_r_min)
+        m.addConstr(H_g_ghp_mp[i]<=m_g_ghp[i]*t_g_mp_r_max)
+        m.addConstr(H_ht_f_ht[i]>=m_ht_forward[i]*t_ht_min)
+        m.addConstr(H_ht_f_ht[i]<=m_ht_forward[i]*t_ht_max)
+        m.addConstr(H_ht_r_ht[i]>=m_ht_reverse[i]*t_ht_min)
+        m.addConstr(H_ht_r_ht[i]<=m_ht_reverse[i]*t_ht_max)
+        m.addConstr(H_ht_f_mp[i]>=m_ht_forward[i]*t_g_mp_r_min)
+        m.addConstr(H_ht_f_mp[i]<=m_ht_forward[i]*t_g_mp_r_max)
+        m.addConstr(H_ht_r_mp[i]>=m_ht_reverse[i]*t_g_mp_r_min)
+        m.addConstr(H_ht_r_mp[i]<=m_ht_reverse[i]*t_g_mp_r_max)
+
+        m.addConstr(H_g_mp_mp_r[i]>=m_g_mp[i]*t_g_mp_r_min)
+        m.addConstr(H_g_mp_mp_r[i]<=m_g_mp[i]*t_g_mp_r_max)
+
+        m.addConstr(H_ct_f_ct[i]>=m_ct_forward[i]*t_ct_min)
+        m.addConstr(H_ct_f_ct[i]<=m_ct_forward[i]*t_ct_max)
+        m.addConstr(H_ct_r_ct[i]>=m_ct_reverse[i]*t_ct_min)
+        m.addConstr(H_ct_r_ct[i]<=m_ct_reverse[i]*t_ct_max)
+
+        m.addConstr(H_ct_f_mp[i]>=m_ct_forward[i]*t_q_mp_r_min)
+        m.addConstr(H_ct_f_mp[i]<=m_ct_forward[i]*t_q_mp_r_max)
+        m.addConstr(H_ct_r_mp[i]>=m_ct_reverse[i]*t_q_mp_r_min)
+        m.addConstr(H_ct_r_mp[i]<=m_ct_reverse[i]*t_q_mp_r_max)
+        m.addConstr(H_q_hp_hp[i]>=m_q_hp[i]*t_q_hp_min)
+        m.addConstr(H_q_hp_hp[i]<=m_q_hp[i]*t_q_hp_max)
+        m.addConstr(H_q_hp_mp[i]>=m_q_hp[i]*t_q_mp_r_min)
+        m.addConstr(H_q_hp_mp[i]<=m_q_hp[i]*t_q_mp_r_max)
+        m.addConstr(H_q_ghp_ghp[i]>=m_q_ghp[i]*t_q_ghp_min)
+        m.addConstr(H_q_ghp_ghp[i]<=m_q_ghp[i]*t_q_ghp_max)
+        m.addConstr(H_q_ghp_mp[i]>=m_q_ghp[i]*t_q_mp_r_min)
+        m.addConstr(H_q_ghp_mp[i]<=m_q_ghp[i]*t_q_mp_r_max)
+        m.addConstr(H_q_mp_mp[i]>=m_q_mp[i]*t_q_mp_min)
+        m.addConstr(H_q_mp_mp[i]<=m_q_mp[i]*t_q_mp_max)
+        m.addConstr(H_q_mp_mp_r[i]>=m_q_mp[i]*t_q_mp_r_min)
+        m.addConstr(H_q_mp_mp_r[i]<=m_q_mp[i]*t_q_mp_r_max)
 
 
     
-    # if with_rlt == 1:
-    #     for i in range(int(period/24)-1):
-    #         # m.addConstr(H_ht_ht[i*24+24] == H_ht_ht[24*i])
-    #         m.addConstr(H_ht_ht[i*24+24] == H_ht_ht[24*i])
-    #         m.addConstr(H_ct_ct[i*24+24] == H_ct_ct[24*i])
-            # m.addConstr(H_cdu_ht[i*24+24] == H_cdu_ht[24*i])
+    for i in range(int(period/24)-1):
+        # m.addConstr(H_ht_ht[i*24+24] == H_ht_ht[24*i])
+        m.addConstr(H_ht_f_ht[i*24+24] == H_ht_f_ht[24*i])
+        m.addConstr(H_ht_r_ht[i*24+24] == H_ht_r_ht[24*i])
+        m.addConstr(H_ct_f_ct[i*24+24] == H_ct_f_ct[24*i])
+        m.addConstr(H_ct_r_ct[i*24+24] == H_ct_r_ct[24*i])
         # m.addConstr(H_ht_ht[-1] == H_ht_ht[0])
         # m.addConstr(H_fc_ht[-1] == H_fc_ht[0])
         # m.addConstr(H_cdu_ht[-1] == H_cdu_ht[0])
