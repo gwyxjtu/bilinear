@@ -2,7 +2,7 @@
 Author: guo_idpc
 Date: 2023-02-23 19:15:43
 LastEditors: guo_idpc 867718012@qq.com
-LastEditTime: 2023-03-05 10:32:27
+LastEditTime: 2023-03-05 10:35:28
 FilePath: /bilinear/main_model/model.py
 Description: 人一生会遇到约2920万人,两个人相爱的概率是0.000049,所以你不爱我,我不怪你.
 
@@ -283,15 +283,15 @@ def opt(M,T,error,fix,res_M_T,H):
     for i in range(period - 1):
         ###m.addConstr(m_ht * (t_ht[i + 1] - t_ht[i]) == m_fc * (t_cdu[i] - t_ht[i]) + m_cdu * (t_cdu[i] - t_ht[i]) - q_ct[i]/c_kWh- g_sol[i]/c_kWh )
         # m.addConstr(H_ht_ht[i+1]-H_ht_ht[i] == H_fc_cdu[i] - H_fc_ht[i]+H_cdu_cdu[i] - H_cdu_ht[i]-q_ct[i]/c_kWh- g_sol[i]/c_kWh)        
-        m.addConstr(g_ht[i] + g_hp[i] + g_fc[i] + g_ghp[i] + g_slack[i]== g_demand[i] + water_load[i])#+ g_slack[i]
+        m.addConstr(g_ht[i] + g_hp[i] + g_fc[i] + g_ghp[i] == g_demand[i] + water_load[i]+ g_slack[i])#+ g_slack[i]
         m.addConstr(g_ht[i] == c_kWh*M_ht*(t_ht[i+1] - t_ht[i]))
-        m.addConstr(q_ct[i] + q_hp[i] + q_ghp[i] + q_slack[i] == q_demand[i])
+        m.addConstr(q_ct[i] + q_hp[i] + q_ghp[i]  == q_demand[i]+ q_slack[i])
         m.addConstr(q_ct[i] == c_kWh*M_ct*(t_ct[i] - t_ct[i+1]))
         m.addConstr(h_sto[i+1] - h_sto[i] == h_pur[i] + h_el[i] - h_fc[i])
         
-    m.addConstr(g_ht[-1] + g_hp[-1] + g_fc[-1] + g_ghp[-1] +g_slack[-1]== g_demand[-1] + water_load[-1])
+    m.addConstr(g_ht[-1] + g_hp[-1] + g_fc[-1] + g_ghp[-1] == g_demand[-1] + water_load[-1]+g_slack[-1])
     m.addConstr(g_ht[-1] == c_kWh*M_ht*(t_ht[0] - t_ht[-1]))
-    m.addConstr(q_ct[-1] + q_hp[-1] + q_ghp[-1] +q_slack[-1]== q_demand[-1])
+    m.addConstr(q_ct[-1] + q_hp[-1] + q_ghp[-1] == q_demand[-1]+q_slack[-1])
     m.addConstr(q_ct[-1] == c_kWh*M_ct*(t_ct[-1] - t_ct[0]))
     m.addConstr(h_sto[0] - h_sto[-1] == h_pur[-1] + h_el[-1] - h_fc[-1])
     piece_count=0
