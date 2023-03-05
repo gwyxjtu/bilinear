@@ -2,7 +2,7 @@
 Author: guo_idpc
 Date: 2023-02-23 19:15:43
 LastEditors: guo_idpc 867718012@qq.com
-LastEditTime: 2023-03-03 18:29:43
+LastEditTime: 2023-03-05 10:32:27
 FilePath: /bilinear/main_model/model.py
 Description: 人一生会遇到约2920万人,两个人相爱的概率是0.000049,所以你不爱我,我不怪你.
 
@@ -511,7 +511,7 @@ def opt(M,T,error,fix,res_M_T,H):
         m.addConstr(g_hp[i] == c_kWh *(H_g_hp_hp[i] - H_g_hp_mp[i]))
         m.addConstr(g_ghp[i] == c_kWh *(H_g_ghp_ghp[i] - H_g_ghp_mp[i]))
         m.addConstr(g_ht[i] == c_kWh *(H_ht_ht[i] - H_ht_mp[i]))
-        m.addConstr(g_demand[i] + g_slack[i] == c_kWh *(H_g_mp_mp[i] - H_g_mp_mp_r[i]))
+        m.addConstr(g_demand[i] + g_slack[i] +water_load[i]== c_kWh *(H_g_mp_mp[i] - H_g_mp_mp_r[i]))
         
         # cooling supply
         m.addConstr(q_hp[i] == c_kWh *(H_q_hp_mp[i] - H_q_hp_hp[i]))
