@@ -2,7 +2,7 @@
 Author: guo_idpc
 Date: 2023-02-23 19:15:43
 LastEditors: guo_idpc 867718012@qq.com
-LastEditTime: 2023-03-04 21:31:29
+LastEditTime: 2023-03-05 10:23:56
 FilePath: /bilinear/main_model/model.py
 Description: 人一生会遇到约2920万人,两个人相爱的概率是0.000049,所以你不爱我,我不怪你.
 
@@ -92,7 +92,7 @@ def opt():
     t_g_ghp_max = 55
     t_g_mp_min = 45
     t_g_mp_max = 50
-    t_g_mp_r_min = 20
+    t_g_mp_r_min = 35
     t_g_mp_r_max = 80   
     t_ct_min = 5
     t_ct_max = 20
@@ -119,7 +119,7 @@ def opt():
 
     period = len(g_demand)
     # 固定设备容量
-    area_pv = 5000#m.addVar(vtype=GRB.CONTINUOUS, lb=0, ub = 2000, name=f"area_pv")
+    area_pv = 10000#m.addVar(vtype=GRB.CONTINUOUS, lb=0, ub = 2000, name=f"area_pv")
     hst = 200#m.addVar(vtype=GRB.CONTINUOUS, lb=0, ub = 2000, name=f"hst")
 
     # M_ht = 50000#m.addVar(vtype=GRB.CONTINUOUS, lb=m_ht_1,ub=m_ht_2, name="m_ht") # capacity of hot water tank
@@ -137,8 +137,8 @@ def opt():
     M_ct = 5000
     fc_max = 3000
     el_max = 1000
-    hp_max = 1000
-    ghp_max = 3000
+    hp_max = 2000
+    ghp_max = 1500
     pump_max = 10000
     m = gp.Model("bilinear")
 
@@ -164,7 +164,7 @@ def opt():
     t_ht = [m.addVar(vtype=GRB.CONTINUOUS, lb=t_ht_min, ub = t_ht_max, name=f"t_ht{t}") for t in range(period)] # temperature of hot water tank
     t_g_hp = [m.addVar(vtype=GRB.CONTINUOUS, lb=t_g_hp_min,ub=t_g_hp_max,name=f"t_g_hp{t}") for t in range(period)] # waste heat pump heat sullpy temperature
     t_g_ghp = [m.addVar(vtype=GRB.CONTINUOUS, lb=t_g_ghp_min,ub = t_g_ghp_max, name=f"t_g_ghp{t}") for t in range(period)] # ground heat pump heat sullpy temperature
-    t_g_mp = [m.addVar(vtype=GRB.CONTINUOUS, lb=t_g_mp_min,ub = t_g_mp_max name=f"t_g_mp{t}") for t in range(period)] # heat sullpy main pipe temperature
+    t_g_mp = [m.addVar(vtype=GRB.CONTINUOUS, lb=t_g_mp_min,ub = t_g_mp_max, name=f"t_g_mp{t}") for t in range(period)] # heat sullpy main pipe temperature
     t_g_mp_r = [m.addVar(vtype=GRB.CONTINUOUS, lb=t_g_mp_r_min,ub = t_g_mp_r_max, name=f"t_g_mp_r{t}") for t in range(period)] # heat sullpy main pipe return temperature
 
     t_ct = [m.addVar(vtype=GRB.CONTINUOUS, lb=t_ct_min,ub = t_ct_max, name=f"t_ct{t}") for t in range(period)] # cold water tank temperature
@@ -228,15 +228,15 @@ def opt():
     for i in range(period - 1):
         ###m.addConstr(m_ht * (t_ht[i + 1] - t_ht[i]) == m_fc * (t_cdu[i] - t_ht[i]) + m_cdu * (t_cdu[i] - t_ht[i]) - q_ct[i]/c_kWh- g_sol[i]/c_kWh )
         # m.addConstr(H_ht_ht[i+1]-H_ht_ht[i] == H_fc_cdu[i] - H_fc_ht[i]+H_cdu_cdu[i] - H_cdu_ht[i]-q_ct[i]/c_kWh- g_sol[i]/c_kWh)        
-        m.addConstr(g_ht[i] + g_hp[i] + g_fc[i] + g_ghp[i] + g_slack[i]== g_demand[i] + water_load[i])#+ g_slack[i]
+        m.addConstr(g_ht[i] + g_hp[i] + g_fc[i] + g_ghp[i] == g_demand[i] + water_load[i]+ g_slack[i])#+ g_slack[i]
         m.addConstr(g_ht[i] == c_kWh*M_ht*(t_ht[i+1] - t_ht[i]))
-        m.addConstr(q_ct[i] + q_hp[i] + q_ghp[i] + q_slack[i] == q_demand[i])
+        m.addConstr(q_ct[i] + q_hp[i] + q_ghp[i] == q_demand[i]+ q_slack[i] )
         m.addConstr(q_ct[i] == c_kWh*M_ct*(t_ct[i] - t_ct[i+1]))
         m.addConstr(h_sto[i+1] - h_sto[i] == h_pur[i] + h_el[i] - h_fc[i])
         
-    m.addConstr(g_ht[-1] + g_hp[-1] + g_fc[-1] + g_ghp[-1] +g_slack[-1]== g_demand[-1] + water_load[-1])
+    m.addConstr(g_ht[-1] + g_hp[-1] + g_fc[-1] + g_ghp[-1] == g_demand[-1] + water_load[-1]+g_slack[-1])
     m.addConstr(g_ht[-1] == c_kWh*M_ht*(t_ht[0] - t_ht[-1]))
-    m.addConstr(q_ct[-1] + q_hp[-1] + q_ghp[-1] +q_slack[-1]== q_demand[-1])
+    m.addConstr(q_ct[-1] + q_hp[-1] + q_ghp[-1] == q_demand[-1]+q_slack[-1])
     m.addConstr(q_ct[-1] == c_kWh*M_ct*(t_ct[-1] - t_ct[0]))
     m.addConstr(h_sto[0] - h_sto[-1] == h_pur[-1] + h_el[-1] - h_fc[-1])
     # piece_count=0
@@ -458,13 +458,13 @@ def opt():
         m.addConstr(g_hp[i] == c_kWh *m_g_hp[i]*(t_g_hp[i] - t_g_mp_r[i]))
         m.addConstr(g_ghp[i] == c_kWh *m_g_ghp[i]*(t_g_ghp[i] - t_g_mp_r[i]))
         m.addConstr(g_ht[i] == c_kWh *(m_ht_forward[i]-m_ht_reverse[i])*(t_ht[i] - t_g_mp_r[i]))
-        m.addConstr(g_demand[i] + g_slack[i] == c_kWh *m_g_mp[i]*(t_g_mp - t_g_mp_r[i]))
+        m.addConstr(g_demand[i]+water_load[i] + g_slack[i] == c_kWh *m_g_mp[i]*(t_g_mp[i] - t_g_mp_r[i]))
         
         # cooling supply
         m.addConstr(q_hp[i] == c_kWh *m_q_hp[i]*(t_q_mp_r[i] - t_q_hp[i]))
         m.addConstr(q_ghp[i] == c_kWh *m_q_ghp[i]*(t_q_mp_r[i] - t_q_ghp[i]))
         m.addConstr(q_ct[i] == c_kWh *(m_ct_forward[i]-m_ct_reverse[i])*(t_q_mp_r[i] - t_ct[i]))
-        m.addConstr(q_demand[i] + q_slack[i] == c_kWh *m_q_mp[i]*(t_q_mp_r[i] - t_q_mp))
+        m.addConstr(q_demand[i] + q_slack[i] == c_kWh *m_q_mp[i]*(t_q_mp_r[i] - t_q_mp[i]))
         
 
         m.addConstr(p_fc[i] <= fc_max)
@@ -481,8 +481,8 @@ def opt():
         # main pipe
         # m.addConstr(H_g_mp_mp[i] == H_g_hp_hp[i] + H_g_ghp_ghp[i] + H_fc_fc[i] + H_ht_ht[i])
         # m.addConstr(H_q_mp_mp[i] == H_q_hp_hp[i] + H_q_ghp_ghp[i] + H_ct_ct[i])
-        m.addConstr(m_g_mp[i]*t_g_mp == m_g_hp[i]*t_g_hp[i] + m_g_ghp[i]*t_g_ghp[i] + m_fc[i]*t_fc[i] +( m_ht_forward[i]-m_ht_reverse[i])*t_ht[i])
-        m.addConstr(m_q_mp[i]*t_q_mp == m_q_hp[i]*t_q_hp[i] + m_q_ghp[i]*t_q_ghp[i] + ( m_ct_forward[i]-m_ct_reverse[i])*t_ct[i])
+        m.addConstr(m_g_mp[i]*t_g_mp[i] == m_g_hp[i]*t_g_hp[i] + m_g_ghp[i]*t_g_ghp[i] + m_fc[i]*t_fc[i] +( m_ht_forward[i]-m_ht_reverse[i])*t_ht[i])
+        m.addConstr(m_q_mp[i]*t_q_mp[i] == m_q_hp[i]*t_q_hp[i] + m_q_ghp[i]*t_q_ghp[i] + ( m_ct_forward[i]-m_ct_reverse[i])*t_ct[i])
         m.addConstr(m_g_mp[i] == m_g_hp[i] + m_g_ghp[i] + m_fc[i] + m_ht_forward[i] - m_ht_reverse[i])
         m.addConstr(m_q_mp[i] == m_q_hp[i] + m_q_ghp[i] + m_ct_forward[i] - m_ct_reverse[i])
 
@@ -601,12 +601,14 @@ def opt():
 
             #'p_idcpump':[p_idcpump[i].X for i in range(period)],
             'g_load':g_demand,
+            'water_load':water_load,
+            'total_g_load':[g_demand[i]+water_load[i] for i in range(period)],
             'g_fc':[g_fc[i].X for i in range(period)],
             'g_hp':[g_hp[i].X for i in range(period)],
             'g_ghp':[g_ghp[i].X for i in range(period)],
             'z_ghpg':[z_ghpg[i].X for i in range(period)],
             'g_ht':[g_ht[i].X for i in range(period)],
-            # 'g_slack':[g_slack[i].X for i in range(period)],
+            'g_slack':[g_slack[i].X for i in range(period)],
 
             'q_load':q_demand,
             'q_hp':[q_hp[i].X for i in range(period)],
@@ -623,7 +625,7 @@ def opt():
             # 'z_idc':[z_idc[i].X for i in range(period)],
 
             't_ht':[t_ht[i].X for i in range(period)],
-            't_g_mp':[t_g_mp for i in range(period)],
+            't_g_mp':[t_g_mp[i].x for i in range(period)],
             't_g_mp_r':[t_g_mp_r[i].X for i in range(period)],
             't_g_hp':[t_g_hp[i].X for i in range(period)],
             't_g_ghp':[t_g_ghp[i].X for i in range(period)],
@@ -632,9 +634,10 @@ def opt():
             't_ct':[t_ct[i].X for i in range(period)],
             't_q_hp':[t_q_hp[i].X for i in range(period)],
             't_q_ghp':[t_q_ghp[i].X for i in range(period)],
-            't_q_mp':[t_q_mp for i in range(period)],
+            't_q_mp':[t_q_mp[i].x for i in range(period)],
             't_q_mp_r':[t_q_mp_r[i].X for i in range(period)],
-
+            'q_slack':[q_slack[i].X for i in range(period)],
+            
             #'m_cdu':[m_cdu[i].X for i in range(period)],
             'm_fc':[m_fc[i].x for i in range(period)],
             'm_g_mp':[m_g_mp[i].x for i in range(period)],
@@ -661,5 +664,9 @@ def opt():
     print(max([g_fc[i].X for i in range(period)]))
     print('p_fc:')
     print(max([p_fc[i].X for i in range(period)]))
+    print('g_ht:')
+    print(max([g_ht[i].X for i in range(period)]))
+    print("q_ct:")
+    print(max([q_ct[i].X for i in range(period)]))
     print("-----")
     return ans
