@@ -2,7 +2,7 @@
 Author: guo_idpc
 Date: 2023-02-23 17:19:03
 LastEditors: guo_idpc 867718012@qq.com
-LastEditTime: 2023-03-04 22:04:03
+LastEditTime: 2023-03-07 16:57:56
 FilePath: /bilinear/main_blp.py
 Description: 人一生会遇到约2920万人,两个人相爱的概率是0.000049,所以你不爱我,我不怪你.
 
@@ -60,4 +60,4 @@ if __name__ == '__main__':
     plot_for_test(res)
     end=time.time()
     print('Running time: %s Seconds'%(end-start))
-    # send('计算完毕',receivers,"ok",['res_for_test/test.csv'])
+    send('计算完毕',receivers,"ok",['res_for_test/test.csv'])

@@ -2,7 +2,7 @@
 Author: guo_idpc
 Date: 2023-02-24 15:03:18
 LastEditors: guo_idpc 867718012@qq.com
-LastEditTime: 2023-03-04 21:42:09
+LastEditTime: 2023-03-07 16:58:01
 FilePath: /bilinear/main_model/model_load.py
 Description: 人一生会遇到约2920万人,两个人相爱的概率是0.000049,所以你不爱我,我不怪你.
 
@@ -11,7 +11,7 @@ Copyright (c) 2023 by ${git_name_email}, All Rights Reserved.
 import pandas as pd
 import csv
 cer = 0.1
-days=12
+days=36
 
 
 
@@ -148,22 +148,26 @@ elif days == 24:
     q_demand = q_demand[384+24:384+48]+q_demand[1080+24:1080+48]+q_demand[1752:1752+24]+q_demand[2496+48:2496+72]+q_demand[3216:3216+24]+q_demand[3960:3960+24]+q_demand[4680+48:4680+72]+q_demand[5424:5424+24]+q_demand[6168:6168+24]+q_demand[6888+24:6888+48]+q_demand[7632:7632+24]+q_demand[8352:8352+24]
     r_solar =   r_solar[384+24:384+48]+ r_solar[1080+24:1080+48]+ r_solar[1752:1752+24]+ r_solar[2496+48:2496+72]+ r_solar[3216:3216+24]+ r_solar[3960:3960+24]+ r_solar[4680+48:4680+72]+ r_solar[5424:5424+24]+ r_solar[6168:6168+24]+r_solar[6888+24:6888+48]+r_solar[7632:7632+24]+r_solar[8352:8352+24]
     ele_load = ele_load[384+24:384+48]+ele_load[1080+24:1080+48]+ele_load[1752:1752+24]+ele_load[2496+48:2496+72]+ele_load[3216:3216+24]+ele_load[3960:3960+24]+ele_load[4680+48:4680+72]+ele_load[5424:5424+24]+ele_load[6168:6168+24]+ele_load[6888+24:6888+48]+ele_load[7632:7632+24]+ele_load[8352:8352+24]
+    water_load = water_load[384+24:384+48]+water_load[1080+24:1080+48]+water_load[1752:1752+24]+water_load[2496+48:2496+72]+water_load[3216:3216+24]+water_load[3960:3960+24]+water_load[4680+48:4680+72]+water_load[5424:5424+24]+water_load[6168:6168+24]+water_load[6888+24:6888+48]+water_load[7632:7632+24]+water_load[8352:8352+24]
+
 
     g_demand = g_demand+g_demand
     q_demand = q_demand+q_demand
     r_solar = r_solar+r_solar
     ele_load = ele_load+ele_load
+    water_load = water_load+water_load
 elif days == 36:
     g_demand = g_demand[384+24:384+48]+g_demand[1080+24:1080+48]+g_demand[1752:1752+24]+g_demand[2496+48:2496+72]+g_demand[3216:3216+24]+g_demand[3960:3960+24]+g_demand[4680+48:4680+72]+g_demand[5424:5424+24]+g_demand[6168:6168+24]+g_demand[6888+24:6888+48]+g_demand[7632:7632+24]+g_demand[8352:8352+24]
     q_demand = q_demand[384+24:384+48]+q_demand[1080+24:1080+48]+q_demand[1752:1752+24]+q_demand[2496+48:2496+72]+q_demand[3216:3216+24]+q_demand[3960:3960+24]+q_demand[4680+48:4680+72]+q_demand[5424:5424+24]+q_demand[6168:6168+24]+q_demand[6888+24:6888+48]+q_demand[7632:7632+24]+q_demand[8352:8352+24]
     r_solar =   r_solar[384+24:384+48]+ r_solar[1080+24:1080+48]+ r_solar[1752:1752+24]+ r_solar[2496+48:2496+72]+ r_solar[3216:3216+24]+ r_solar[3960:3960+24]+ r_solar[4680+48:4680+72]+ r_solar[5424:5424+24]+ r_solar[6168:6168+24]+r_solar[6888+24:6888+48]+r_solar[7632:7632+24]+r_solar[8352:8352+24]
     ele_load = ele_load[384+24:384+48]+ele_load[1080+24:1080+48]+ele_load[1752:1752+24]+ele_load[2496+48:2496+72]+ele_load[3216:3216+24]+ele_load[3960:3960+24]+ele_load[4680+48:4680+72]+ele_load[5424:5424+24]+ele_load[6168:6168+24]+ele_load[6888+24:6888+48]+ele_load[7632:7632+24]+ele_load[8352:8352+24]
-    
+    water_load = water_load[384+24:384+48]+water_load[1080+24:1080+48]+water_load[1752:1752+24]+water_load[2496+48:2496+72]+water_load[3216:3216+24]+water_load[3960:3960+24]+water_load[4680+48:4680+72]+water_load[5424:5424+24]+water_load[6168:6168+24]+water_load[6888+24:6888+48]+water_load[7632:7632+24]+water_load[8352:8352+24]
+
     g_demand = g_demand+g_demand+g_demand
     q_demand = q_demand+q_demand+q_demand
     r_solar = r_solar+r_solar+r_solar
     ele_load = ele_load+ele_load+ele_load
-
+    water_load = water_load+water_load+water_load
 elif days == 365:
     1
 # import matplotlib.pyplot as plt

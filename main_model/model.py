@@ -2,7 +2,7 @@
 Author: guo_idpc
 Date: 2023-02-23 19:15:43
 LastEditors: guo_idpc 867718012@qq.com
-LastEditTime: 2023-03-05 10:23:56
+LastEditTime: 2023-03-07 23:08:15
 FilePath: /bilinear/main_model/model.py
 Description: 人一生会遇到约2920万人,两个人相爱的概率是0.000049,所以你不爱我,我不怪你.
 
@@ -61,7 +61,6 @@ from main_model.method import piece_McCormick
 from main_model.model_load import *
 
 
-
 def opt():
     '''
     description: 优化主函数，构造物理模型
@@ -91,9 +90,9 @@ def opt():
     t_g_ghp_min = 35
     t_g_ghp_max = 55
     t_g_mp_min = 45
-    t_g_mp_max = 50
-    t_g_mp_r_min = 35
-    t_g_mp_r_max = 80   
+    t_g_mp_max = 55
+    t_g_mp_r_min = 30
+    t_g_mp_r_max = 45
     t_ct_min = 5
     t_ct_max = 20
 
@@ -102,25 +101,32 @@ def opt():
     t_q_ghp_min = 5
     t_q_ghp_max = 20
     t_q_mp_min = 5
-    t_q_mp_max = 7
-    t_q_mp_r_min = 5
+    t_q_mp_max = 10
+    t_q_mp_r_min = 15
     t_q_mp_r_max = 30
 
     m_g_pipe_max = 100000
     m_q_pipe_max = 300000
 
+    M_ht = 5000#m.addVar(vtype=GRB.CONTINUOUS, lb=m_ht_1,ub=m_ht_2, name="m_ht") # capacity of hot water tank
+    M_ct = 5000
+    fc_max = 3000
+    el_max = 1000
+    hp_max = 2000
+    ghp_max = 1500
+    pump_max = 10000
+    area_pv = 10000#m.addVar(vtype=GRB.CONTINUOUS, lb=0, ub = 2000, name=f"area_pv")
+    hst = 200#m.addVar(vtype=GRB.CONTINUOUS, lb=0, ub = 2000, name=f"hst")
+
 
     c = 4200 # J/kg*C
     c_kWh = 4200/3.6/1000000
-    delta_T = 12
     lambda_h = 20
 
     
 
     period = len(g_demand)
     # 固定设备容量
-    area_pv = 10000#m.addVar(vtype=GRB.CONTINUOUS, lb=0, ub = 2000, name=f"area_pv")
-    hst = 200#m.addVar(vtype=GRB.CONTINUOUS, lb=0, ub = 2000, name=f"hst")
 
     # M_ht = 50000#m.addVar(vtype=GRB.CONTINUOUS, lb=m_ht_1,ub=m_ht_2, name="m_ht") # capacity of hot water tank
     # M_ct = 50000
@@ -132,14 +138,6 @@ def opt():
     # Create a new model    
 
 
-
-    M_ht = 5000#m.addVar(vtype=GRB.CONTINUOUS, lb=m_ht_1,ub=m_ht_2, name="m_ht") # capacity of hot water tank
-    M_ct = 5000
-    fc_max = 3000
-    el_max = 1000
-    hp_max = 2000
-    ghp_max = 1500
-    pump_max = 10000
     m = gp.Model("bilinear")
 
 
@@ -197,8 +195,8 @@ def opt():
     p_fc = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_fc{t}") for t in range(period)]
     h_fc = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"h_fc{t}") for t in range(period)] # hydrogen used in fuel cells
 
-    g_ht = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_ht{t}") for t in range(period)]
-    q_ct = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"q_ct{t}") for t in range(period)]
+    g_ht = [m.addVar(vtype=GRB.CONTINUOUS, lb=0,ub=0, name=f"g_ht{t}") for t in range(period)]
+    q_ct = [m.addVar(vtype=GRB.CONTINUOUS, lb=0,ub=0, name=f"q_ct{t}") for t in range(period)]
     # t_de = [m.addVar(vtype=GRB.CONTINUOUS, lb=0,name=f"t_de{t}") for t in range(period)] # outlet temparature of heat supply circuits
     # p_eb = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_eb{t}") for t in range(period)]
     # g_eb = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_eb{t}") for t in range(period)]
