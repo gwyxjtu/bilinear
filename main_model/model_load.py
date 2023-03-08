@@ -2,7 +2,7 @@
 Author: guo_idpc
 Date: 2023-02-24 15:03:18
 LastEditors: guo_idpc 867718012@qq.com
-LastEditTime: 2023-03-07 16:58:01
+LastEditTime: 2023-03-08 16:36:28
 FilePath: /bilinear/main_model/model_load.py
 Description: 人一生会遇到约2920万人,两个人相爱的概率是0.000049,所以你不爱我,我不怪你.
 
@@ -187,4 +187,6 @@ elif days == 365:
 lambda_ele_in = lambda_ele_in*days
 #r = r*days
 # m_de = [g_de[i]/c_kWh/delta_T for i in range(len(g_de))]
+
+
 period = len(g_demand)
