@@ -195,8 +195,8 @@ def opt():
     p_fc = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_fc{t}") for t in range(period)]
     h_fc = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"h_fc{t}") for t in range(period)] # hydrogen used in fuel cells
 
-    g_ht = [m.addVar(vtype=GRB.CONTINUOUS, lb=0,ub=0, name=f"g_ht{t}") for t in range(period)]
-    q_ct = [m.addVar(vtype=GRB.CONTINUOUS, lb=0,ub=0, name=f"q_ct{t}") for t in range(period)]
+    g_ht = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_ht{t}") for t in range(period)]
+    q_ct = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"q_ct{t}") for t in range(period)]
     # t_de = [m.addVar(vtype=GRB.CONTINUOUS, lb=0,name=f"t_de{t}") for t in range(period)] # outlet temparature of heat supply circuits
     # p_eb = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_eb{t}") for t in range(period)]
     # g_eb = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_eb{t}") for t in range(period)]
