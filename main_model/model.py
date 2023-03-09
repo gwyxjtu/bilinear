@@ -2,7 +2,7 @@
 Author: guo_idpc
 Date: 2023-02-23 19:15:43
 LastEditors: guo_idpc 867718012@qq.com
-LastEditTime: 2023-03-07 23:08:15
+LastEditTime: 2023-03-09 11:13:20
 FilePath: /bilinear/main_model/model.py
 Description: 人一生会遇到约2920万人,两个人相爱的概率是0.000049,所以你不爱我,我不怪你.
 
@@ -59,7 +59,7 @@ import pandas as pd
 from main_model.method import piece_McCormick
 
 from main_model.model_load import *
-
+from main_model.stohcastic_load import *
 
 def opt():
     '''
@@ -83,9 +83,9 @@ def opt():
     
     t_ht_min = 40
     t_ht_max = 65
-    t_fc_min = 55
+    t_fc_min = 60
     t_fc_max = 65
-    t_g_hp_min = 40
+    t_g_hp_min = 55
     t_g_hp_max = 60
     t_g_ghp_min = 35
     t_g_ghp_max = 55
@@ -124,8 +124,13 @@ def opt():
     lambda_h = 20
 
     
+    # 读取数据
+    dict_load = get_sto_load()
+    [g_demand,q_demand,r,water_load] = dict_load['average']
+    ele_load = [3100 for _ in range(len(g_demand))]
 
     period = len(g_demand)
+    # scenario = len(g_demand[0])
     # 固定设备容量
 
     # M_ht = 50000#m.addVar(vtype=GRB.CONTINUOUS, lb=m_ht_1,ub=m_ht_2, name="m_ht") # capacity of hot water tank
@@ -195,8 +200,8 @@ def opt():
     p_fc = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_fc{t}") for t in range(period)]
     h_fc = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"h_fc{t}") for t in range(period)] # hydrogen used in fuel cells
 
-    g_ht = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_ht{t}") for t in range(period)]
-    q_ct = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"q_ct{t}") for t in range(period)]
+    g_ht = [m.addVar(vtype=GRB.CONTINUOUS, lb=0,ub=0, name=f"g_ht{t}") for t in range(period)]
+    q_ct = [m.addVar(vtype=GRB.CONTINUOUS, lb=0,ub=0, name=f"q_ct{t}") for t in range(period)]
     # t_de = [m.addVar(vtype=GRB.CONTINUOUS, lb=0,name=f"t_de{t}") for t in range(period)] # outlet temparature of heat supply circuits
     # p_eb = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_eb{t}") for t in range(period)]
     # g_eb = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_eb{t}") for t in range(period)]
@@ -214,7 +219,16 @@ def opt():
     g_slack = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_slack{t}") for t in range(period)] # 弃掉的热
     q_slack = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"q_slack{t}") for t in range(period)] # 弃掉的冷
     p_slack = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_slack{t}") for t in range(period)] # 弃掉的电
-    # p_co = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_co{t}") for t in range(period)] 
+    # g_slack = [[m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_slack{t}_{i}") for t in range(period)] for i in range(scenario)] # 弃掉的热
+    # q_slack = [[m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"q_slack{t}_{i}") for t in range(period)] for i in range(scenario)] # 弃掉的冷
+    # p_slack = [[m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_slack{t}_{i}") for t in range(period)] for i in range(scenario)] # 弃掉的电
+
+    # p_us = [[m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_us{t}_{i}") for t in range(period)] for i in range(scenario)] # 电的切负荷
+    # g_us = [[m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_us{t}_{i}") for t in range(period)] for i in range(scenario)] # 热的切负荷
+    # q_us = [[m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"q_us{t}_{i}") for t in range(period)] for i in range(scenario)] # 冷的切负荷
+
+    # c_dt = [[m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"c_dt{t}_{i}") for t in range(period)] for i in range(scenario)] # 存储的工作负荷
+    # it_dt_n = [[m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"it_dt_n{t}_{i}") for t in range(period)] for i in range(scenario)] # 分配给当前时刻的可调度负荷
 
     for i in range(int(period/24)-1):
         m.addConstr(t_ht[i*24+24] == t_ht[24*i])
@@ -237,164 +251,6 @@ def opt():
     m.addConstr(q_ct[-1] + q_hp[-1] + q_ghp[-1] == q_demand[-1]+q_slack[-1])
     m.addConstr(q_ct[-1] == c_kWh*M_ct*(t_ct[-1] - t_ct[0]))
     m.addConstr(h_sto[0] - h_sto[-1] == h_pur[-1] + h_el[-1] - h_fc[-1])
-    # piece_count=0
-    # slack_num=0
-    # #piece_McCormick(model,H,x,y,x1,x2,y1,y2,piece_count,error,i_number,H_name,n)
-    # if fix == 0:
-    #     for i in range(period):
-    #         #print(H_fc_fc[i],m_fc,t_fc[i],m_fc_1,m_fc_2,t_fc_1[i],t_fc_2[i])
-    #         m,piece_count,int_tmp = piece_McCormick(m,H_fc_fc[i],m_fc[i],t_fc[i],m_fc_1[i],m_fc_2[i],t_fc_1[i],t_fc_2[i],piece_count,error,i,"H_fc_fc",nn)
-    #         slack_num+=int_tmp
-
-    #         m,piece_count,int_tmp = piece_McCormick(m,H_fc_mp[i],m_fc[i],t_g_mp_r[i],m_fc_1[i],m_fc_2[i],t_g_mp_r_1[i],t_g_mp_r_2[i],piece_count,error,i,"H_fc_mp",nn)
-    #         slack_num+=int_tmp
-
-    #         m,piece_count,int_tmp = piece_McCormick(m,H_ht_ht[i],m_ht[i],t_ht[i],m_ht_1[i],m_ht_2[i],t_ht_1[i],t_ht_2[i],piece_count,error,i,"H_ht_ht",nn)
-    #         slack_num+=int_tmp
-
-    #         m,piece_count,int_tmp = piece_McCormick(m,H_ht_mp[i],m_ht[i],t_g_mp_r[i],m_ht_1[i],m_ht_2[i],t_g_mp_r_1[i],t_g_mp_r_2[i],piece_count,error,i,"H_ht_mp",nn)
-    #         slack_num+=int_tmp
-
-    #         m,piece_count,int_tmp = piece_McCormick(m,H_g_hp_hp[i],m_g_hp[i],t_g_hp[i],m_g_hp_1[i],m_g_hp_2[i],t_g_hp_1[i],t_g_hp_2[i],piece_count,error,i,"H_g_hp_hp",nn)
-    #         slack_num+=int_tmp
-            
-    #         m,piece_count,int_tmp = piece_McCormick(m,H_g_hp_mp[i],m_g_hp[i],t_g_mp_r[i],m_g_hp_1[i],m_g_hp_2[i],t_g_mp_r_1[i],t_g_mp_r_2[i],piece_count,error,i,"H_g_hp_mp",nn)
-    #         slack_num+=int_tmp
-
-    #         m,piece_count,int_tmp = piece_McCormick(m,H_g_ghp_ghp[i],m_g_ghp[i],t_g_ghp[i],m_g_ghp_1[i],m_g_ghp_2[i],t_g_ghp_1[i],t_g_ghp_2[i],piece_count,error,i,"H_g_ghp_ghp",nn)
-    #         slack_num+=int_tmp
-
-    #         m,piece_count,int_tmp = piece_McCormick(m,H_g_ghp_mp[i],m_g_ghp[i],t_g_mp_r[i],m_g_ghp_1[i],m_g_ghp_2[i],t_g_mp_r_1[i],t_g_mp_r_2[i],piece_count,error,i,"H_g_ghp_mp",nn)
-    #         slack_num+=int_tmp
-
-    #         m,piece_count,int_tmp = piece_McCormick(m,H_g_mp_mp[i],m_g_mp[i],t_g_mp[i],m_g_mp_1[i],m_g_mp_2[i],t_g_mp_1[i],t_g_mp_2[i],piece_count,error,i,"H_g_mp_mp",nn)
-    #         slack_num+=int_tmp
-
-    #         m,piece_count,int_tmp = piece_McCormick(m,H_g_mp_mp_r[i],m_g_mp[i],t_g_mp_r[i],m_g_mp_1[i],m_g_mp_2[i],t_g_mp_r_1[i],t_g_mp_r_2[i],piece_count,error,i,"H_g_mp_mp_r",nn)
-    #         slack_num+=int_tmp
-            
-    #         # cooling main pipe
-    #         m,piece_count,int_tmp = piece_McCormick(m,H_ct_ct[i],m_ct[i],t_ct[i],m_ct_1[i],m_ct_2[i],t_ct_1[i],t_ct_2[i],piece_count,error,i,"H_ct_ct",nn)
-    #         slack_num+=int_tmp
-
-    #         m,piece_count,int_tmp = piece_McCormick(m,H_ct_mp[i],m_ct[i],t_q_mp_r[i],m_ct_1[i],m_ct_2[i],t_q_mp_r_1[i],t_q_mp_r_2[i],piece_count,error,i,"H_ct_mp",nn)
-    #         slack_num+=int_tmp
-
-    #         m,piece_count,int_tmp = piece_McCormick(m,H_q_hp_hp[i],m_q_hp[i],t_q_hp[i],m_q_hp_1[i],m_q_hp_2[i],t_q_hp_1[i],t_q_hp_2[i],piece_count,error,i,"H_q_hp_hp",nn)
-    #         slack_num+=int_tmp
-
-    #         m,piece_count,int_tmp = piece_McCormick(m,H_q_hp_mp[i],m_q_hp[i],t_q_mp_r[i],m_q_hp_1[i],m_q_hp_2[i],t_q_mp_r_1[i],t_q_mp_r_2[i],piece_count,error,i,"H_q_hp_mp",nn)
-    #         slack_num+=int_tmp
-
-    #         m,piece_count,int_tmp = piece_McCormick(m,H_q_ghp_ghp[i],m_q_ghp[i],t_q_ghp[i],m_q_ghp_1[i],m_q_ghp_2[i],t_q_ghp_1[i],t_q_ghp_2[i],piece_count,error,i,"H_q_ghp_ghp",nn)
-    #         slack_num+=int_tmp
-
-    #         m,piece_count,int_tmp = piece_McCormick(m,H_q_ghp_mp[i],m_q_ghp[i],t_q_mp_r[i],m_q_ghp_1[i],m_q_ghp_2[i],t_q_mp_r_1[i],t_q_mp_r_2[i],piece_count,error,i,"H_q_ghp_mp",nn)
-    #         slack_num+=int_tmp
-
-    #         m,piece_count,int_tmp = piece_McCormick(m,H_q_mp_mp[i],m_q_mp[i],t_q_mp[i],m_q_mp_1[i],m_q_mp_2[i],t_q_mp_1[i],t_q_mp_2[i],piece_count,error,i,"H_q_mp_mp",nn)
-    #         slack_num+=int_tmp
-
-    #         m,piece_count,int_tmp = piece_McCormick(m,H_q_mp_mp_r[i],m_q_mp[i],t_q_mp_r[i],m_q_mp_1[i],m_q_mp_2[i],t_q_mp_r_1[i],t_q_mp_r_2[i],piece_count,error,i,"H_q_mp_mp_r",nn)
-    #         slack_num+=int_tmp
-            
-    #     #print(piece_count)
-    # elif fix == 1:
-
-        # m.addConstrs(m_fc[i] == res_M_T['m_fc'][i] for i in range(period))
-        # m.addConstrs(m_g_hp[i] == res_M_T['m_g_hp'][i] for i in range(period))
-        # m.addConstrs(m_g_ghp[i] == res_M_T['m_g_ghp'][i] for i in range(period))
-        # m.addConstrs(m_ht[i] == res_M_T['m_ht'][i] for i in range(period))
-        # m.addConstrs(m_g_mp[i] == res_M_T['m_g_mp'][i] for i in range(period))
-
-        # m.addConstrs(m_q_hp[i] == res_M_T['m_q_hp'][i] for i in range(period))
-        # m.addConstrs(m_q_ghp[i] == res_M_T['m_q_ghp'][i] for i in range(period))
-        # m.addConstrs(m_ct[i] == res_M_T['m_ct'][i] for i in range(period))
-        # m.addConstrs(m_q_mp[i] == res_M_T['m_q_mp'][i] for i in range(period))
-        
-    #     for i in range(period):
-    #         # m.addConstr(g_fc[i] == c_kWh * m_fc[i]*(t_fc[i] - t_ht[i]))
-    #         m.addConstr(H_fc_fc[i] == m_fc[i]*t_fc[i])
-    #         m.addConstr(H_fc_mp[i] == m_fc[i]*t_g_mp_r[i])
-
-    #         m.addConstr(H_ht_ht[i] == m_ht[i]*t_ht[i])
-    #         m.addConstr(H_ht_mp[i] == m_ht[i]*t_g_mp_r[i])
-
-    #         m.addConstr(H_g_hp_hp[i] == m_g_hp[i]*t_g_hp[i])
-    #         m.addConstr(H_g_hp_mp[i] == m_g_hp[i]*t_g_mp_r[i])
-
-    #         m.addConstr(H_g_ghp_ghp[i] == m_g_ghp[i]*t_g_ghp[i])
-    #         m.addConstr(H_g_ghp_mp[i] == m_g_ghp[i]*t_g_mp_r[i])
-
-    #         m.addConstr(H_g_mp_mp[i] == m_g_mp[i]*t_g_mp[i])
-    #         m.addConstr(H_g_mp_mp_r[i] == m_g_mp[i]*t_g_mp_r[i])
-            
-    #         # cooling 
-    #         m.addConstr(H_ct_ct[i] == m_ct[i]*t_ct[i])
-    #         m.addConstr(H_ct_mp[i] == m_ct[i]*t_q_mp_r[i])
-
-    #         m.addConstr(H_q_hp_hp[i] == m_q_hp[i]*t_q_hp[i])
-    #         m.addConstr(H_q_hp_mp[i] == m_q_hp[i]*t_q_mp_r[i])
-
-    #         m.addConstr(H_q_ghp_ghp[i] == m_q_ghp[i]*t_q_ghp[i])
-    #         m.addConstr(H_q_ghp_mp[i] == m_q_ghp[i]*t_q_mp_r[i])
-
-    #         m.addConstr(H_q_mp_mp[i] == m_q_mp[i]*t_q_mp[i])
-    #         m.addConstr(H_q_mp_mp_r[i] == m_q_mp[i]*t_q_mp_r[i])
-
-
-    #         m.addConstr(t_fc[i]*res_M_T['m_fc'][i] == H['H_fc_fc'][i])
-    #         # m.addConstr(t_g_mp_r[i]*res_M_T['m_fc'][i] == H['H_fc_mp'][i])
-
-    #         m.addConstr(t_ht[i]*res_M_T['m_ht'][i] == H['H_ht_ht'][i])
-    #         # m.addConstr(t_g_mp_r[i]*res_M_T['m_ht'][i] == H['H_ht_mp'][i])
-
-    #         m.addConstr(t_g_hp[i]*res_M_T['m_g_hp'][i] == H['H_g_hp_hp'][i])
-    #         # m.addConstr(t_g_mp_r[i]*res_M_T['m_g_hp'][i] == H['H_g_hp_mp'][i])
-
-    #         m.addConstr(t_g_ghp[i]*res_M_T['m_g_ghp'][i] == H['H_g_ghp_ghp'][i])
-    #         # m.addConstr(t_g_mp_r[i]*res_M_T['m_g_ghp'][i] == H['H_g_ghp_mp'][i])
-
-    #         m.addConstr(t_g_mp[i]*res_M_T['m_g_mp'][i] == H['H_g_mp_mp'][i])
-    #         m.addConstr(t_g_mp_r[i]*res_M_T['m_g_mp'][i] == H['H_g_mp_mp_r'][i])
-            
-
-    #         # cooling
-    #         m.addConstr(t_ct[i]*res_M_T['m_ct'][i] == H['H_ct_ct'][i])
-    #         # m.addConstr(t_q_mp_r[i]*res_M_T['m_ct'][i] == H['H_ct_mp'][i])
-
-    #         m.addConstr(t_q_hp[i]*res_M_T['m_q_hp'][i] == H['H_q_hp_hp'][i])
-    #         # m.addConstr(t_q_mp_r[i]*res_M_T['m_q_hp'][i] == H['H_q_hp_mp'][i])
-
-    #         m.addConstr(t_q_ghp[i]*res_M_T['m_q_ghp'][i] == H['H_q_ghp_ghp'][i])
-    #         # m.addConstr(t_q_mp_r[i]*res_M_T['m_q_ghp'][i] == H['H_q_ghp_mp'][i])
-
-    #         m.addConstr(t_q_mp[i]*res_M_T['m_q_mp'][i] == H['H_q_mp_mp'][i])
-    #         m.addConstr(t_q_mp_r[i]*res_M_T['m_q_mp'][i] == H['H_q_mp_mp_r'][i])
-            
-    # elif fix == 2:
-        # 直接双线性
-    # for i in range(period):
-    #     m.addConstr(H_fc_fc[i] == m_fc[i]*t_fc[i])
-    #     m.addConstr(H_fc_mp[i] == m_fc[i]*t_g_mp_r[i])
-    #     m.addConstr(H_ht_ht[i] == m_ht[i]*t_ht[i])
-    #     m.addConstr(H_ht_mp[i] == m_ht[i]*t_g_mp_r[i])
-    #     m.addConstr(H_g_hp_hp[i] == m_g_hp[i]*t_g_hp[i])
-    #     m.addConstr(H_g_hp_mp[i] == m_g_hp[i]*t_g_mp_r[i])
-    #     m.addConstr(H_g_ghp_ghp[i] == m_g_ghp[i]*t_g_ghp[i])
-    #     m.addConstr(H_g_ghp_mp[i] == m_g_ghp[i]*t_g_mp_r[i])
-    #     m.addConstr(H_g_mp_mp[i] == m_g_mp[i]*t_g_mp[i])
-    #     m.addConstr(H_g_mp_mp_r[i] == m_g_mp[i]*t_g_mp_r[i])
-
-    #     m.addConstr(H_ct_ct[i] == m_ct[i]*t_ct[i])
-    #     m.addConstr(H_ct_mp[i] == m_ct[i]*t_q_mp_r[i])
-    #     m.addConstr(H_q_hp_hp[i] == m_q_hp[i]*t_q_hp[i])
-    #     m.addConstr(H_q_hp_mp[i] == m_q_hp[i]*t_q_mp_r[i])
-    #     m.addConstr(H_q_ghp_ghp[i] == m_q_ghp[i]*t_q_ghp[i])
-    #     m.addConstr(H_q_ghp_mp[i] == m_q_ghp[i]*t_q_mp_r[i])
-    #     m.addConstr(H_q_mp_mp[i] == m_q_mp[i]*t_q_mp[i])
-    #     m.addConstr(H_q_mp_mp_r[i] == m_q_mp[i]*t_q_mp_r[i])
-
 
 
     m.addConstr(gp.quicksum(p_pur)<=(1-cer)*(sum(ele_load)+sum(q_demand)/5+sum(g_demand)/0.9+sum(water_load)/0.9))
@@ -430,26 +286,17 @@ def opt():
         m.addConstr(p_fc[i] == k_fc * h_fc[i])#氢燃烧产电
 
 
-        ###m.addConstr(g_sol[i] == c_kWh * m_he * (t_cdu[i] - t_he[i]))
-        # m.addConstr(g_sol[i] <= c_kWh * (H_he_cdu[i] - H_he_he[i]))
-        ###m.addConstr(q_ct[i] == c_kWh * m_ct * (t_cdu[i] - t_ct[i]))
-        # m.addConstr(q_ct[i] == z_ct[i]*c_kWh * (H_ct_cdu[i] - H_ct_ct[i]))
-        # m.addConstr(p_ct[i] >= 0.04 * q_ct[i])
-        #m.addConstr(0.95*g_he[i] == c_kWh * m_idc * (t_idc[i] - t_ht[i]))
-        #m.addConstr(p_idcpump[i] == 0.6/1000 * (m_ct*z_ct[i]+m_he*z_he[i]))
+
 
         m.addConstr(p_el[i] == k_el * h_el[i])
-        #m.addConstr(g_el[i] == 0.2017*p_el[i])
-        # m.addConstr(g_fc[i] == c_kWh * m_fc[i]*(t_fc[i] - t_ht[i]))
+
 
         m.addConstr(100000*z_fc[i] >= p_fc[i])
         m.addConstr(100000*z_el[i] >= p_el[i])
         m.addConstr(z_el[i] + z_fc[i] <= 1)
-        #m.addConstr(t_el[i] <= 80)
-        #m.addConstr(z_fc[i]+z_el[i]<=1)
+
         m.addConstr(h_sto[i]<=hst)
         m.addConstr(h_el[i]<=hst)
-        #m.addConstr(t_ht[i] >= 50)
         
         # heat sypply
         m.addConstr(g_fc[i] == c_kWh * m_fc[i]*(t_fc[i] - t_g_mp_r[i]))
@@ -467,13 +314,11 @@ def opt():
 
         m.addConstr(p_fc[i] <= fc_max)
         m.addConstr(p_pump[i]<=pump_max)
-        #m.addConstr(p_idcpump[i]<=idcpump_max)
-        #m.addConstr(p_eb[i]<=p_eb_max)
+
         m.addConstr(p_el[i] <= el_max)
         m.addConstr(p_ghp[i] <= ghp_max)
         m.addConstr(p_hp[i] <= hp_max)
         m.addConstr(t_fc[i] <=t_fc_max)###
-        # m.addConstr(t_ht[i] <=65)###
         m.addConstr(t_ht[i] >=t_ht_min)###
 
         # main pipe
@@ -483,68 +328,12 @@ def opt():
         m.addConstr(m_q_mp[i]*t_q_mp[i] == m_q_hp[i]*t_q_hp[i] + m_q_ghp[i]*t_q_ghp[i] + ( m_ct_forward[i]-m_ct_reverse[i])*t_ct[i])
         m.addConstr(m_g_mp[i] == m_g_hp[i] + m_g_ghp[i] + m_fc[i] + m_ht_forward[i] - m_ht_reverse[i])
         m.addConstr(m_q_mp[i] == m_q_hp[i] + m_q_ghp[i] + m_ct_forward[i] - m_ct_reverse[i])
-
-
         m.addConstr(p_pv[i]==k_pv*area_pv*r[i])
-        # m.addConstr(t_he[i] >= 30)###
-        # m.addConstr(t_cdu[i]<=95)###
-        # if with_rlt == 1 and fix != 1:
-        #     m.addConstr(H_fc_fc[i]>=m_fc[i]*t_fc_1[i])
-        #     m.addConstr(H_fc_fc[i]<=m_fc[i]*t_fc_2[i])
-        #     m.addConstr(H_fc_mp[i]>=m_fc[i]*t_g_mp_r_1[i])
-        #     m.addConstr(H_fc_mp[i]<=m_fc[i]*t_g_mp_r_2[i])
-        #     m.addConstr(H_g_hp_hp[i]>=m_g_hp[i]*t_g_hp_1[i])
-        #     m.addConstr(H_g_hp_hp[i]<=m_g_hp[i]*t_g_hp_2[i])
-        #     m.addConstr(H_g_hp_mp[i]>=m_g_hp[i]*t_g_mp_r_1[i])
-        #     m.addConstr(H_g_hp_mp[i]<=m_g_hp[i]*t_g_mp_r_2[i])
-        #     m.addConstr(H_g_ghp_ghp[i]>=m_g_ghp[i]*t_g_ghp_1[i])
-        #     m.addConstr(H_g_ghp_ghp[i]<=m_g_ghp[i]*t_g_ghp_2[i])
-        #     m.addConstr(H_g_ghp_mp[i]>=m_g_ghp[i]*t_g_mp_r_1[i])
-        #     m.addConstr(H_g_ghp_mp[i]<=m_g_ghp[i]*t_g_mp_r_2[i])
-        #     m.addConstr(H_ht_ht[i]>=m_ht[i]*t_ht_1[i])
-        #     m.addConstr(H_ht_ht[i]<=m_ht[i]*t_ht_2[i])
-        #     m.addConstr(H_ht_mp[i]>=m_ht[i]*t_g_mp_1[i])
-        #     m.addConstr(H_ht_mp[i]<=m_ht[i]*t_g_mp_2[i])
-        #     m.addConstr(H_g_mp_mp[i]>=m_g_mp[i]*t_g_mp_1[i])
-        #     m.addConstr(H_g_mp_mp[i]<=m_g_mp[i]*t_g_mp_2[i])
-        #     m.addConstr(H_g_mp_mp_r[i]>=m_g_mp[i]*t_g_mp_r_1[i])
-        #     m.addConstr(H_g_mp_mp_r[i]<=m_g_mp[i]*t_g_mp_r_2[i])
+ 
 
-        #     m.addConstr(H_ct_ct[i]>=m_ct[i]*t_ct_1[i])
-        #     m.addConstr(H_ct_ct[i]<=m_ct[i]*t_ct_2[i])
-        #     m.addConstr(H_ct_mp[i]>=m_ct[i]*t_q_mp_r_1[i])
-        #     m.addConstr(H_ct_mp[i]<=m_ct[i]*t_q_mp_r_2[i])
-        #     m.addConstr(H_q_hp_hp[i]>=m_q_hp[i]*t_q_hp_1[i])
-        #     m.addConstr(H_q_hp_hp[i]<=m_q_hp[i]*t_q_hp_2[i])
-        #     m.addConstr(H_q_hp_mp[i]>=m_q_hp[i]*t_q_mp_r_1[i])
-        #     m.addConstr(H_q_hp_mp[i]<=m_q_hp[i]*t_q_mp_r_2[i])
-        #     m.addConstr(H_q_ghp_ghp[i]>=m_q_ghp[i]*t_q_ghp_1[i])
-        #     m.addConstr(H_q_ghp_ghp[i]<=m_q_ghp[i]*t_q_ghp_2[i])
-        #     m.addConstr(H_q_ghp_mp[i]>=m_q_ghp[i]*t_q_mp_r_1[i])
-        #     m.addConstr(H_q_ghp_mp[i]<=m_q_ghp[i]*t_q_mp_r_2[i])
-        #     m.addConstr(H_q_mp_mp[i]>=m_q_mp[i]*t_q_mp_1[i])
-        #     m.addConstr(H_q_mp_mp[i]<=m_q_mp[i]*t_q_mp_2[i])
-        #     m.addConstr(H_q_mp_mp_r[i]>=m_q_mp[i]*t_q_mp_r_1[i])
-        #     m.addConstr(H_q_mp_mp_r[i]<=m_q_mp[i]*t_q_mp_r_2[i])
+    # for s in range(scenario):
+    #     for i in range(period):
 
-
-    
-    # if with_rlt == 1:
-    #     for i in range(int(period/24)-1):
-    #         # m.addConstr(H_ht_ht[i*24+24] == H_ht_ht[24*i])
-    #         m.addConstr(H_ht_ht[i*24+24] == H_ht_ht[24*i])
-    #         m.addConstr(H_ct_ct[i*24+24] == H_ct_ct[24*i])
-            # m.addConstr(H_cdu_ht[i*24+24] == H_cdu_ht[24*i])
-        # m.addConstr(H_ht_ht[-1] == H_ht_ht[0])
-        # m.addConstr(H_fc_ht[-1] == H_fc_ht[0])
-        # m.addConstr(H_cdu_ht[-1] == H_cdu_ht[0])
-
-    # m.addConstr(m_ht>=5*m_cdu)###
-    #m.addConstr(h_sto[-1] == h_sto[0])
-
-    # m.setObjective( crf_pv * cost_pv*area_pv+ crf_el*cost_el*el_max
-    #     +crf_hst * hst*cost_hst +crf_water* cost_water_hot*m_ht + crf_fc *cost_fc * fc_max + lambda_h*gp.quicksum(h_pur)*365+ 
-    #     365*gp.quicksum([p_pur[i]*lambda_ele_in[i] for i in range(24)])-365*gp.quicksum(p_sol)*lambda_ele_out , GRB.MINIMIZE)
     m.setObjective(  lambda_h*gp.quicksum(h_pur)*365/days+ 
         gp.quicksum([p_pur[i]*lambda_ele_in[i] for i in range(period)])*365/days-gp.quicksum(p_sol)*lambda_ele_out*365/days, GRB.MINIMIZE)
 
