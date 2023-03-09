@@ -2,7 +2,7 @@
 Author: guo_idpc
 Date: 2023-03-08 16:36:12
 LastEditors: guo_idpc 867718012@qq.com
-LastEditTime: 2023-03-09 09:19:19
+LastEditTime: 2023-03-09 22:32:55
 FilePath: /bilinear/main_model/stohcastic_load.py
 Description: 人一生会遇到约2920万人,两个人相爱的概率是0.000049,所以你不爱我,我不怪你.
 
@@ -79,7 +79,7 @@ def get_sto_load():
     # g_demand = [1000 if g_demand[i] >=0 else 0 for i in range(len(ele_load))]
     q_demand = [q_demand[i]/2 for i in range(len(ele_load))]
     ele_load = [ele_load[i]/2 for i in range(len(ele_load))]
-    water_load = [water_load[i]/2 if water_load[i] != 0 else 10 for i in range(len(ele_load))]
+    water_load = [water_load[i]/2 if water_load[i] != 0 else 1 for i in range(len(ele_load))]
     r=r_solar
 
 
@@ -169,12 +169,69 @@ def get_sto_load():
             q_demand_final += q_demand[m_date[i]+peak_g_max_day[i]*24:m_date[i]+(peak_g_max_day[i]+1)*24]
             r_final += r[m_date[i]+peak_g_max_day[i]*24:m_date[i]+(peak_g_max_day[i]+1)*24]
             water_load_final += water_load[m_date[i]+peak_g_max_day[i]*24:m_date[i]+(peak_g_max_day[i]+1)*24]
+    g_demand_final = [g_demand_final[i]*1.1+100 for i in range(len(g_demand_final))]
+    q_demand_final = [q_demand_final[i] for i in range(len(q_demand_final))]
+    water_load_final = [water_load_final[i] for i in range(len(water_load_final))]
     return_dict['peak_min'] = [g_demand_final,q_demand_final,r_final,water_load_final]
 
 
+    # laod mean max
+    g_demand_final = []
+    q_demand_final = []
+    r_final = []
+    water_load_final = []
+    for i in range(12):
+        if mean_g_max_day[i] == -1:
+            g_demand_final+=g_demand[m_date[i]+mean_q_max_day[i]*24:m_date[i]+(mean_q_max_day[i]+1)*24]
+            q_demand_final += q_demand[m_date[i]+mean_q_max_day[i]*24:m_date[i]+(mean_q_max_day[i]+1)*24]
+            r_final += r[m_date[i]+mean_q_max_day[i]*24:m_date[i]+(mean_q_max_day[i]+1)*24]
+            water_load_final += water_load[m_date[i]+mean_q_max_day[i]*24:m_date[i]+(mean_q_max_day[i]+1)*24]
+        else:
+            g_demand_final+=g_demand[m_date[i]+mean_g_max_day[i]*24:m_date[i]+(mean_g_max_day[i]+1)*24]
+            q_demand_final += q_demand[m_date[i]+mean_g_max_day[i]*24:m_date[i]+(mean_g_max_day[i]+1)*24]
+            r_final += r[m_date[i]+mean_g_max_day[i]*24:m_date[i]+(mean_g_max_day[i]+1)*24]
+            water_load_final += water_load[m_date[i]+mean_g_max_day[i]*24:m_date[i]+(mean_g_max_day[i]+1)*24]
+    return_dict['mean_max'] = [g_demand_final,q_demand_final,r_final,water_load_final]
 
+    # load mean min
+    g_demand_final = []
+    q_demand_final = []
+    r_final = []
+    water_load_final = []
+    for i in range(12):
+        if mean_g_min_day[i] == -1:
+            g_demand_final+=g_demand[m_date[i]+mean_q_min_day[i]*24:m_date[i]+(mean_q_min_day[i]+1)*24]
+            q_demand_final += q_demand[m_date[i]+mean_q_min_day[i]*24:m_date[i]+(mean_q_min_day[i]+1)*24]
+            r_final += r[m_date[i]+mean_q_min_day[i]*24:m_date[i]+(mean_q_min_day[i]+1)*24]
+            water_load_final += water_load[m_date[i]+mean_q_min_day[i]*24:m_date[i]+(mean_q_min_day[i]+1)*24]
+        else:
+            g_demand_final+=g_demand[m_date[i]+mean_g_min_day[i]*24:m_date[i]+(mean_g_min_day[i]+1)*24]
+            q_demand_final += q_demand[m_date[i]+mean_g_min_day[i]*24:m_date[i]+(mean_g_min_day[i]+1)*24]
+            r_final += r[m_date[i]+mean_g_min_day[i]*24:m_date[i]+(mean_g_min_day[i]+1)*24]
+            water_load_final += water_load[m_date[i]+mean_g_min_day[i]*24:m_date[i]+(mean_g_min_day[i]+1)*24]
+    return_dict['mean_min'] = [g_demand_final,q_demand_final,r_final,water_load_final]
 
-
+    # 按照每一天每一小时的平衡值
+    g_demand_final = []
+    q_demand_final = []
+    r_final = []
+    water_load_final = []
+    for i in range(12):
+        g_demand_tmp = [[0 for _ in range(m_month[i])] for _ in range(24)]
+        q_demand_tmp = [[0 for _ in range(m_month[i])] for _ in range(24)]
+        r_final_tmp = [[0 for _ in range(m_month[i])] for _ in range(24)]
+        water_load_tmp = [[0 for _ in range(m_month[i])] for _ in range(24)]
+        for j in range(m_month[i]):
+            for t in range(24):
+                g_demand_tmp[t][j] = g_demand[m_date[i]+j*24+t]
+                q_demand_tmp[t][j] = q_demand[m_date[i]+j*24+t]
+                r_final_tmp[t][j] = r[m_date[i]+j*24+t]
+                water_load_tmp[t][j] = water_load[m_date[i]+j*24+t]
+        g_demand_final += [sum(g_demand_tmp[ii])/len(g_demand_tmp[ii]) for ii in range(24)]
+        q_demand_final += [sum(q_demand_tmp[ii])/len(q_demand_tmp[ii]) for ii in range(24)]
+        r_final += [sum(r_final_tmp[ii])/len(r_final_tmp[ii]) for ii in range(24)]
+        water_load_final += [sum(water_load_tmp[ii])/len(water_load_tmp[ii]) for ii in range(24)]
+    return_dict['mean_mean'] = [g_demand_final,q_demand_final,r_final,water_load_final]
     print(1)
     # import matplotlib.pyplot as plt
     # # print(g_demand)
