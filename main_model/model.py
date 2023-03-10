@@ -2,7 +2,7 @@
 Author: guo_idpc
 Date: 2023-02-23 19:15:43
 LastEditors: guo_idpc 867718012@qq.com
-LastEditTime: 2023-03-10 16:47:30
+LastEditTime: 2023-03-10 21:30:10
 FilePath: /bilinear/main_model/model.py
 Description: 人一生会遇到约2920万人,两个人相爱的概率是0.000049,所以你不爱我,我不怪你.
 
@@ -68,7 +68,7 @@ def opt():
     return {*}
     '''
 
-    fix_mode = 0 #0是bilinear，1 是fix 总管t，2是fix 设备温度，3是固定流量。
+    fix_mode = 2 #0是bilinear，1 是fix 总管t，2是fix 设备温度，3是固定流量。
 
 
     # 系数
@@ -133,15 +133,15 @@ def opt():
         t_q_mp_r_min = 15
         t_q_mp_r_max = 30
 
-    if fix_mode == 2:#总管
+    if fix_mode == 2:#设备
         t_fc_min = 60
         t_fc_max = 60
         t_g_hp_min = 55
         t_g_hp_max = 55
         t_g_ghp_min = 50
         t_g_ghp_max = 50
-        t_g_mp_min = 45
-        t_g_mp_max = 60
+        t_g_mp_min = 50
+        t_g_mp_max = 55
         t_g_mp_r_min = 30
         t_g_mp_r_max = 45
 
@@ -180,6 +180,7 @@ def opt():
     c_dt_max = 6
     
     distribute = [0.8,0.1,0.1]
+
 
     lambda_q = 3000
     lambda_g = 3000
