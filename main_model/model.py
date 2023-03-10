@@ -1,12 +1,8 @@
 '''
 Author: guo_idpc
-Date: 2023-02-23 19:15:43
+Date: 2023-03-11 00:30:10
 LastEditors: guo_idpc 867718012@qq.com
-<<<<<<< Updated upstream
-LastEditTime: 2023-03-11 00:26:52
-=======
-LastEditTime: 2023-03-10 22:33:16
->>>>>>> Stashed changes
+LastEditTime: 2023-03-11 01:05:39
 FilePath: /bilinear/main_model/model.py
 Description: 人一生会遇到约2920万人,两个人相爱的概率是0.000049,所以你不爱我,我不怪你.
 
@@ -73,7 +69,8 @@ def opt():
     '''
 
     fix_mode = 0 #0是bilinear，1 是fix 总管t，2是fix 设备温度，3是固定流量。
-
+    distribute = [0.8,0.1,0.1]
+    # distribute = [1,0,0]
 
     # 系数
     k_fc = 18
@@ -183,11 +180,11 @@ def opt():
     it_load_max = 2
     c_dt_max = 6
     
-    distribute = [0.8,0.1,0.1]
 
-    lambda_q = 3000
-    lambda_g = 3000
-    lambda_p = 3000
+
+    lambda_q = 30000
+    lambda_g = 30000
+    lambda_p = 30000
     [g_demand,q_demand,r,water_load] = dict_load['average']
     # ele_load = [3100 for _ in range(len(g_demand))]
 
@@ -296,6 +293,13 @@ def opt():
     
     # m.addConstr(t_ht[-1] == t_ht[0])
     # m.addConstr(h_sto[-1] == h_sto[0])
+
+    if fix_mode == 3:
+        m.addConstrs(m_fc[i] == 20000 for i in range(period))
+        m.addConstrs(m_g_hp[i] == 20000 for i in range(period))
+        m.addConstrs(m_q_hp[i] == 20000 for i in range(period))
+        m.addConstrs(m_g_ghp[i] == 20000 for i in range(period))
+        m.addConstrs(m_q_ghp[i] == 20000 for i in range(period))
 
 
     for i in range(period - 1):
@@ -408,10 +412,10 @@ def opt():
             m.addConstr(p_pv[s][i]==k_pv*area_pv*r[s][i])
 
             m.addConstr(p_el[i] + p_sol[i] + p_pump[i] + ele_load[s][i] + p_ghp[i] + p_hp[i] + p_slack[s][i] == p_us[s][i] + p_pur[i] + p_fc[i] + p_pv[s][i])
-            m.addConstr(g_demand[i]+water_load[i] + g_slack[i] == g_us[i] + c_kWh *m_g_mp[i]*(t_g_mp[i] - t_g_mp_r[i]))
-            m.addConstr( g_hp[i] + g_fc[i] + g_ghp[i] + g_us[i] == g_demand[i] + water_load[i]+ g_slack[i])
-            m.addConstr(q_demand[i] + q_slack[i] == q_us[i] + c_kWh *m_q_mp[i]*(t_q_mp_r[i] - t_q_mp[i]))
-            m.addConstr(q_hp[i] + q_ghp[i] + q_us[i] == q_demand[i]+ q_slack[i] )
+            m.addConstr(g_demand[s][i]+water_load[s][i] + g_slack[s][i] == g_us[s][i] + c_kWh *m_g_mp[i]*(t_g_mp[i] - t_g_mp_r[i]))
+            m.addConstr( g_hp[i] + g_fc[i] + g_ghp[i] + g_us[s][i] == g_demand[s][i] + water_load[s][i]+ g_slack[s][i])
+            m.addConstr(q_demand[s][i] + q_slack[s][i] == q_us[s][i] + c_kWh *m_q_mp[i]*(t_q_mp_r[i] - t_q_mp[i]))
+            m.addConstr(q_hp[i] + q_ghp[i] + q_us[s][i] == q_demand[s][i]+ q_slack[s][i] )
 
             m.addConstr(it_load[s][i] <= it_load_max)
             m.addConstr(c_dt[s][i] <= c_dt_max)
