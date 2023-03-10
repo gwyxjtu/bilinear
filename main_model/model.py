@@ -2,7 +2,7 @@
 Author: guo_idpc
 Date: 2023-02-23 19:15:43
 LastEditors: guo_idpc 867718012@qq.com
-LastEditTime: 2023-03-10 21:30:10
+LastEditTime: 2023-03-11 00:24:38
 FilePath: /bilinear/main_model/model.py
 Description: 人一生会遇到约2920万人,两个人相爱的概率是0.000049,所以你不爱我,我不怪你.
 
@@ -68,7 +68,7 @@ def opt():
     return {*}
     '''
 
-    fix_mode = 2 #0是bilinear，1 是fix 总管t，2是fix 设备温度，3是固定流量。
+    fix_mode = 0 #0是bilinear，1 是fix 总管t，2是fix 设备温度，3是固定流量。
 
 
     # 系数
@@ -176,10 +176,9 @@ def opt():
     ele_idle = 3100*0.7
     it_rt = [0.5,0.4,0.2,0,0.1,0.3,0.4,0.5,0.7,0.8,1,0.8,0.8,0.7,0.7,0.6,0.4,0.3,0.1,0.2,0.3,0.5,0.4,0.3]*days
     it_dt = it_rt
-    it_load_max = 2
+    it_load_max = 4
     c_dt_max = 6
     
-    distribute = [0.8,0.1,0.1]
 
 
     lambda_q = 3000
@@ -292,7 +291,13 @@ def opt():
     
     # m.addConstr(t_ht[-1] == t_ht[0])
     # m.addConstr(h_sto[-1] == h_sto[0])
-
+    if fix_mode == 3:
+        m.addConstrs(m_fc[i]      == 20000 for i in range(period))
+        m.addConstrs(m_g_hp[i]    == 20000 for i in range(period))
+        m.addConstrs(m_q_hp[i]    == 20000 for i in range(period))
+        m.addConstrs(m_g_ghp[i]   == 20000 for i in range(period))
+        m.addConstrs(m_q_ghp[i]   == 20000 for i in range(period))
+        
 
     for i in range(period - 1):
         # m.addConstr(g_ht[i] + g_hp[i] + g_fc[i] + g_ghp[i] == g_demand[i] + water_load[i]+ g_slack[i])#+ g_slack[i]
@@ -401,7 +406,7 @@ def opt():
 
         m.addConstr(p_pv[i]==k_pv*area_pv*r[i])
 
-        m.addConstr(p_el[i] + p_sol[i] + p_pump[i] + ele_load[i] + p_slack[i] == p_us[i] + p_pur[i] + p_fc[i] + p_pv[i])
+        m.addConstr(p_el[i] + p_sol[i] + p_pump[i] + ele_load[i]+ p_slack[i] == p_us[i] + p_pur[i] + p_fc[i] + p_pv[i])
         m.addConstr(g_demand[i]+water_load[i] + g_slack[i] == g_us[i] + c_kWh *m_g_mp[i]*(t_g_mp[i] - t_g_mp_r[i]))
         m.addConstr( g_hp[i] + g_fc[i] + g_ghp[i] + g_us[i] == g_demand[i] + water_load[i]+ g_slack[i])
         m.addConstr(q_demand[i] + q_slack[i] == q_us[i] + c_kWh *m_q_mp[i]*(t_q_mp_r[i] - t_q_mp[i]))
