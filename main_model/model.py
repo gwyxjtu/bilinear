@@ -2,7 +2,7 @@
 Author: guo_idpc
 Date: 2023-02-23 19:15:43
 LastEditors: guo_idpc 867718012@qq.com
-LastEditTime: 2023-03-10 00:17:55
+LastEditTime: 2023-03-10 16:26:22
 FilePath: /bilinear/main_model/model.py
 Description: 人一生会遇到约2920万人,两个人相爱的概率是0.000049,所以你不爱我,我不怪你.
 
@@ -67,6 +67,10 @@ def opt():
     fix : 2则是直接双线性求解
     return {*}
     '''
+
+    fix_mode = 0 #0是bilinear，1 是fix 总管t，2是fix 设备温度，3是固定流量。
+
+
     # 系数
     k_fc = 18
     k_el = 55
@@ -78,11 +82,10 @@ def opt():
     k_pump = 0.6/1000#0.6/1000
 
     # 总管的温度应当固定
-    t_g_mp = 45
-    t_q_mp = 7
+    # t_g_mp = 45
+    # t_q_mp = 7
     
-    # t_ht_min = 40
-    # t_ht_max = 65
+
     t_fc_min = 60
     t_fc_max = 65
     t_g_hp_min = 55
@@ -93,8 +96,7 @@ def opt():
     t_g_mp_max = 55
     t_g_mp_r_min = 30
     t_g_mp_r_max = 45
-    # t_ct_min = 5
-    # t_ct_max = 20
+
 
     t_q_hp_min = 5
     t_q_hp_max = 20
@@ -108,14 +110,58 @@ def opt():
     m_g_pipe_max = 100000
     m_q_pipe_max = 300000
 
-    M_ht = 5000#m.addVar(vtype=GRB.CONTINUOUS, lb=m_ht_1,ub=m_ht_2, name="m_ht") # capacity of hot water tank
-    M_ct = 5000
+
+    if fix_mode == 1:#总管
+        t_fc_min = 60
+        t_fc_max = 65
+        t_g_hp_min = 55
+        t_g_hp_max = 60
+        t_g_ghp_min = 35
+        t_g_ghp_max = 55
+        t_g_mp_min = 50
+        t_g_mp_max = 50
+        t_g_mp_r_min = 30
+        t_g_mp_r_max = 35
+
+
+        t_q_hp_min = 5
+        t_q_hp_max = 20
+        t_q_ghp_min = 5
+        t_q_ghp_max = 20
+        t_q_mp_min = 7
+        t_q_mp_max = 7
+        t_q_mp_r_min = 15
+        t_q_mp_r_max = 30
+
+    if fix_mode == 2:#总管
+        t_fc_min = 60
+        t_fc_max = 60
+        t_g_hp_min = 55
+        t_g_hp_max = 55
+        t_g_ghp_min = 50
+        t_g_ghp_max = 50
+        t_g_mp_min = 45
+        t_g_mp_max = 60
+        t_g_mp_r_min = 30
+        t_g_mp_r_max = 45
+
+
+        t_q_hp_min = 7
+        t_q_hp_max = 7
+        t_q_ghp_min = 8
+        t_q_ghp_max = 8
+        t_q_mp_min = 5
+        t_q_mp_max = 10
+        t_q_mp_r_min = 15
+        t_q_mp_r_max = 30
+
+
     fc_max = 2500
     el_max = 1000
     hp_max = 200
     ghp_max = 350
     pump_max = 10000
-    area_pv = 10000#m.addVar(vtype=GRB.CONTINUOUS, lb=0, ub = 2000, name=f"area_pv")
+    area_pv = 20000#m.addVar(vtype=GRB.CONTINUOUS, lb=0, ub = 2000, name=f"area_pv")
     hst = 200#m.addVar(vtype=GRB.CONTINUOUS, lb=0, ub = 2000, name=f"hst")
 
 
@@ -131,7 +177,7 @@ def opt():
     it_rt = [0.5,0.4,0.2,0,0.1,0.3,0.4,0.5,0.7,0.8,1,0.8,0.8,0.7,0.7,0.6,0.4,0.3,0.1,0.2,0.3,0.5,0.4,0.3]*days
     it_dt = it_rt
     it_load_max = 2
-    c_dt_max = 4
+    c_dt_max = 6
     
     distribute = [0.8,0.1,0.1]
 
@@ -467,7 +513,7 @@ def opt():
             'it_dt_n':[it_dt_n[0][i].X for i in range(period)],
             'it_load':[it_load[0][i].X for i in range(period)],
             
-
+            'p_pv':[p_pv[0][i].X for i in range(period)],
             'g_load':g_demand[0],
             'water_load':water_load[0],
             'total_g_load':[g_demand[0][i]+water_load[0][i] for i in range(period)],
@@ -490,7 +536,7 @@ def opt():
             'it_dt_n':[it_dt_n[1][i].X for i in range(period)],
             'it_load':[it_load[1][i].X for i in range(period)],
             
-
+            'p_pv':[p_pv[1][i].X for i in range(period)],
             'g_load':g_demand[1],
             'water_load':water_load[1],
             'total_g_load':[g_demand[1][i]+water_load[1][i] for i in range(period)],
@@ -511,7 +557,7 @@ def opt():
             'it_dt_n':[it_dt_n[2][i].X for i in range(period)],
             'it_load':[it_load[2][i].X for i in range(period)],
             
-
+            'p_pv':[p_pv[2][i].X for i in range(period)],
             'g_load':g_demand[2],
             'water_load':water_load[2],
             'total_g_load':[g_demand[2][i]+water_load[2][i] for i in range(period)],
@@ -530,4 +576,8 @@ def opt():
     print(sum(ans_ave["q_us"]),sum(ans_max["q_us"]),sum(ans_min["q_us"]))
     print("g_us:")
     print(sum(ans_ave["g_us"]),sum(ans_max["g_us"]),sum(ans_min["g_us"]))
+    print("opex:")
+    print(opex.x)
+    print("cer:")
+    print(ans_ave["cer"],ans_max["cer"],ans_min["cer"])
     return energy_device_res,[ans_ave,ans_max,ans_min]
