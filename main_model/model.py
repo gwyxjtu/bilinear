@@ -2,7 +2,11 @@
 Author: guo_idpc
 Date: 2023-02-23 19:15:43
 LastEditors: guo_idpc 867718012@qq.com
-LastEditTime: 2023-03-10 16:26:22
+<<<<<<< Updated upstream
+LastEditTime: 2023-03-11 00:26:52
+=======
+LastEditTime: 2023-03-10 22:33:16
+>>>>>>> Stashed changes
 FilePath: /bilinear/main_model/model.py
 Description: 人一生会遇到约2920万人,两个人相爱的概率是0.000049,所以你不爱我,我不怪你.
 
@@ -403,11 +407,11 @@ def opt():
 
             m.addConstr(p_pv[s][i]==k_pv*area_pv*r[s][i])
 
-            m.addConstr(p_el[i] + p_sol[i] + p_pump[i] + ele_load[s][i] + p_slack[s][i] == p_us[s][i] + p_pur[i] + p_fc[i] + p_pv[s][i])
-            m.addConstr(g_demand[s][i]+water_load[s][i] + g_slack[s][i] == g_us[s][i] + c_kWh *m_g_mp[i]*(t_g_mp[i] - t_g_mp_r[i]))
-            m.addConstr( g_hp[i] + g_fc[i] + g_ghp[i] + g_us[s][i] == g_demand[s][i] + water_load[s][i]+ g_slack[s][i])
-            m.addConstr(q_demand[s][i] + q_slack[s][i] == q_us[s][i] + c_kWh *m_q_mp[i]*(t_q_mp_r[i] - t_q_mp[i]))
-            m.addConstr(q_hp[i] + q_ghp[i] + q_us[s][i] == q_demand[s][i]+ q_slack[s][i] )
+            m.addConstr(p_el[i] + p_sol[i] + p_pump[i] + ele_load[i] + p_ghp[i] + p_hp[i] + p_slack[i] == p_us[i] + p_pur[i] + p_fc[i] + p_pv[i])
+            m.addConstr(g_demand[i]+water_load[i] + g_slack[i] == g_us[i] + c_kWh *m_g_mp[i]*(t_g_mp[i] - t_g_mp_r[i]))
+            m.addConstr( g_hp[i] + g_fc[i] + g_ghp[i] + g_us[i] == g_demand[i] + water_load[i]+ g_slack[i])
+            m.addConstr(q_demand[i] + q_slack[i] == q_us[i] + c_kWh *m_q_mp[i]*(t_q_mp_r[i] - t_q_mp[i]))
+            m.addConstr(q_hp[i] + q_ghp[i] + q_us[i] == q_demand[i]+ q_slack[i] )
 
             m.addConstr(it_load[s][i] <= it_load_max)
             m.addConstr(c_dt[s][i] <= c_dt_max)
