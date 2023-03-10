@@ -2,7 +2,7 @@
 Author: guo_idpc
 Date: 2023-02-23 19:15:43
 LastEditors: guo_idpc 867718012@qq.com
-LastEditTime: 2023-03-10 16:26:22
+LastEditTime: 2023-03-10 16:47:30
 FilePath: /bilinear/main_model/model.py
 Description: 人一生会遇到约2920万人,两个人相爱的概率是0.000049,所以你不爱我,我不怪你.
 
@@ -189,12 +189,11 @@ def opt():
 
 
   
-    g_demand =   [dict_load['mean_mean'][0],dict_load['peak_max'][0],dict_load['peak_min'][0]]
-    q_demand =   [dict_load['mean_mean'][1],dict_load['peak_max'][1],dict_load['peak_min'][1]]
-    r =          [dict_load['mean_mean'][2],dict_load['peak_max'][2],dict_load['peak_min'][2]]
-    water_load = [dict_load['mean_mean'][3],dict_load['peak_max'][3],dict_load['peak_min'][3]]
-    period = len(g_demand[0])
-    scenario = len(g_demand)
+    g_demand =   dict_load['mean_mean'][0]
+    q_demand =   dict_load['mean_mean'][1]
+    r =          dict_load['mean_mean'][2]
+    water_load = dict_load['mean_mean'][3]
+    period = len(g_demand)
     # 固定设备容量
 
 
@@ -267,23 +266,23 @@ def opt():
     p_pur = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_pur{t}") for t in range(period)] # power purchase
     p_sol = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_sol{t}") for t in range(period)] # power purchase 
     p_pump = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_pump{t}") for t in range(period)] # 用于刻画燃料电池换水的电能消耗
-    # g_slack = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_slack{t}") for t in range(period)] # 弃掉的热
-    # q_slack = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"q_slack{t}") for t in range(period)] # 弃掉的冷
-    # p_slack = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_slack{t}") for t in range(period)] # 弃掉的电
-    g_slack = [[m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_slack{t}_{i}") for t in range(period)] for i in range(scenario)] # 弃掉的热
-    q_slack = [[m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"q_slack{t}_{i}") for t in range(period)] for i in range(scenario)] # 弃掉的冷
-    p_slack = [[m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_slack{t}_{i}") for t in range(period)] for i in range(scenario)] # 弃掉的电
+    g_slack = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_slack{t}") for t in range(period)] # 弃掉的热
+    q_slack = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"q_slack{t}") for t in range(period)] # 弃掉的冷
+    p_slack = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_slack{t}") for t in range(period)] # 弃掉的电
+    # g_slack = [[m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_slack{t}_{i}") for t in range(period)] for i in range(scenario)] # 弃掉的热
+    # q_slack = [[m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"q_slack{t}_{i}") for t in range(period)] for i in range(scenario)] # 弃掉的冷
+    # p_slack = [[m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_slack{t}_{i}") for t in range(period)] for i in range(scenario)] # 弃掉的电
 
-    p_us = [[m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_us{t}_{i}") for t in range(period)] for i in range(scenario)] # 电的切负荷
-    g_us = [[m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_us{t}_{i}") for t in range(period)] for i in range(scenario)] # 热的切负荷
-    q_us = [[m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"q_us{t}_{i}") for t in range(period)] for i in range(scenario)] # 冷的切负荷
+    p_us = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_us{t}") for t in range(period)] # 电的切负荷
+    g_us = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_us{t}") for t in range(period)] # 热的切负荷
+    q_us = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"q_us{t}") for t in range(period)] # 冷的切负荷
 
-    c_dt = [[m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"c_dt{t}_{i}") for t in range(period)] for i in range(scenario)] # 存储的工作负荷
-    it_dt_n = [[m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"it_dt_n{t}_{i}") for t in range(period)] for i in range(scenario)] # 分配给当前时刻的可调度负荷
-    it_load = [[m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"it_load{t}_{i}") for t in range(period)] for i in range(scenario)] # 数据中心workload 计算负荷
+    c_dt = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"c_dt{t}") for t in range(period)]# 存储的工作负荷
+    it_dt_n = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"it_dt_n{t}") for t in range(period)] # 分配给当前时刻的可调度负荷
+    it_load = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"it_load{t}") for t in range(period)] # 数据中心workload 计算负荷
 
-    ele_load = [[m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"ele_load{t}_{i}") for t in range(period)] for i in range(scenario)] # 数据中心电负荷
-    p_pv = [[m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_pv{t}_{i}") for t in range(period)] for i in range(scenario)] # pv pannel
+    ele_load = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"ele_load{t}") for t in range(period)] # 数据中心电负荷
+    p_pv = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_pv{t}") for t in range(period)]  # pv pannel
 
     # for i in range(int(period/24)-1):
     #     m.addConstr(t_ht[i*24+24] == t_ht[24*i])
@@ -321,8 +320,7 @@ def opt():
 
         # ghp
         # m.addConstr(g_demand[i]<=M*z_ghpg[i])
-        for s in range(scenario):
-            m.addConstr(g_demand[s][i]<=100000000*(1-z_ghpq[i]))
+        m.addConstr(g_demand[i]<=100000000*(1-z_ghpq[i]))
         m.addConstr(10000000*z_ghpg[i]>=g_ghp[i])
         m.addConstr(10000000*z_ghpq[i]>=q_ghp[i])
         m.addConstr(z_ghpq[i]+z_ghpg[i]<=1)
@@ -388,31 +386,30 @@ def opt():
         m.addConstr(m_g_mp[i] == m_g_hp[i] + m_g_ghp[i] + m_fc[i] )
         m.addConstr(m_q_mp[i] == m_q_hp[i] + m_q_ghp[i] )
 
-    for s in range(scenario):
-        for i in range(period-1):
-            m.addConstr(c_dt[s][i+1] == c_dt[s][i] + it_dt[i] - it_dt_n[s][i+1])
-    for s in range(scenario):
-        for i in range(int(period/24)):
-            m.addConstr(c_dt[s][i*24] == 0)
-        m.addConstr(c_dt[s][-1] == 0)
-    for s in range(scenario):
-        for i in range(period):
-            # 数据中心电负荷
-            m.addConstr(ele_load[s][i] == ele_idle + (ele_peak - ele_idle) * it_load[s][i])
-            m.addConstr(it_load[s][i] == it_rt[i] + it_dt_n[s][i])
+    for i in range(period-1):
+        m.addConstr(c_dt[i+1] == c_dt[i] + it_dt[i] - it_dt_n[i+1])
 
-            m.addConstr(p_pv[s][i]==k_pv*area_pv*r[s][i])
+    for i in range(int(period/24)):
+        m.addConstr(c_dt[i*24] == 0)
+    m.addConstr(c_dt[-1] == 0)
 
-            m.addConstr(p_el[i] + p_sol[i] + p_pump[i] + ele_load[s][i] + p_slack[s][i] == p_us[s][i] + p_pur[i] + p_fc[i] + p_pv[s][i])
-            m.addConstr(g_demand[s][i]+water_load[s][i] + g_slack[s][i] == g_us[s][i] + c_kWh *m_g_mp[i]*(t_g_mp[i] - t_g_mp_r[i]))
-            m.addConstr( g_hp[i] + g_fc[i] + g_ghp[i] + g_us[s][i] == g_demand[s][i] + water_load[s][i]+ g_slack[s][i])
-            m.addConstr(q_demand[s][i] + q_slack[s][i] == q_us[s][i] + c_kWh *m_q_mp[i]*(t_q_mp_r[i] - t_q_mp[i]))
-            m.addConstr(q_hp[i] + q_ghp[i] + q_us[s][i] == q_demand[s][i]+ q_slack[s][i] )
+    for i in range(period):
+        # 数据中心电负荷
+        m.addConstr(ele_load[i] == ele_idle + (ele_peak - ele_idle) * it_load[i])
+        m.addConstr(it_load[i] == it_rt[i] + it_dt_n[i])
 
-            m.addConstr(it_load[s][i] <= it_load_max)
-            m.addConstr(c_dt[s][i] <= c_dt_max)
+        m.addConstr(p_pv[i]==k_pv*area_pv*r[i])
 
-    m.setObjective(  opex + gp.quicksum([gp.quicksum(q_us[s])*distribute[s] for s in range(scenario)])*lambda_q + gp.quicksum([gp.quicksum(p_us[s])*distribute[s] for s in range(scenario)])*lambda_p + gp.quicksum([gp.quicksum(g_us[s])*distribute[s] for s in range(scenario)])*lambda_g, GRB.MINIMIZE)
+        m.addConstr(p_el[i] + p_sol[i] + p_pump[i] + ele_load[i] + p_slack[i] == p_us[i] + p_pur[i] + p_fc[i] + p_pv[i])
+        m.addConstr(g_demand[i]+water_load[i] + g_slack[i] == g_us[i] + c_kWh *m_g_mp[i]*(t_g_mp[i] - t_g_mp_r[i]))
+        m.addConstr( g_hp[i] + g_fc[i] + g_ghp[i] + g_us[i] == g_demand[i] + water_load[i]+ g_slack[i])
+        m.addConstr(q_demand[i] + q_slack[i] == q_us[i] + c_kWh *m_q_mp[i]*(t_q_mp_r[i] - t_q_mp[i]))
+        m.addConstr(q_hp[i] + q_ghp[i] + q_us[i] == q_demand[i]+ q_slack[i] )
+
+        m.addConstr(it_load[i] <= it_load_max)
+        m.addConstr(c_dt[i] <= c_dt_max)
+
+    m.setObjective(  opex + gp.quicksum(q_us)*lambda_q + gp.quicksum(p_us)*lambda_p + gp.quicksum(g_us)*lambda_g, GRB.MINIMIZE)
 
     m.addConstr(opex ==  lambda_h*gp.quicksum(h_pur)*365/days+ 
         gp.quicksum([p_pur[i]*lambda_ele_in[i] for i in range(period)])*365/days-gp.quicksum(p_sol)*lambda_ele_out*365/days)
@@ -442,11 +439,12 @@ def opt():
     # g_ht.append(c_kWh*m_ht*(t_ht[0].X-t_ht[-1].X))
     # q_ct = [-c_kWh*m_ct*(t_ct[i+1].X-t_ct[i].X) for i in range(period-1)]
     # q_ct.append(-c_kWh*m_ct*(t_ct[0].X-t_ct[-1].X))
-    ele_load = [[ele_load[s][i].X for s in range(scenario)] for i in range(period)]
+    ele_load = [ele_load[i].X for i in range(period)]
 
     energy_device_res = {
         'objective':m.objVal,
         "opex":opex.x,
+        'p_load':ele_load,
         'p_el':[p_el[i].X for i in range(period)],
         'p_fc':[p_fc[i].X for i in range(period)],
         'p_pur':[p_pur[i].X for i in range(period)],
@@ -454,14 +452,33 @@ def opt():
         'p_sol':[p_sol[i].X for i in range(period)],
         'p_hp':[p_hp[i].X for i in range(period)],
         'p_ghp':[p_ghp[i].X for i in range(period)],
+        'p_pv':[p_pv[i].X for i in range(period)],
+        "p_us":[p_us[i].X for i in range(period)],
+        'p_slack':[p_slack[i].X for i in range(period)],
+        'c_dt':[c_dt[i].X for i in range(period)],
+        'it_dt_n':[it_dt_n[i].X for i in range(period)],
+        'it_load':[it_load[i].X for i in range(period)],
+            
 
 
+            
+            
+            
+        "g_us":[g_us[i].X for i in range(period)],
+        'g_slack':[g_slack[i].X for i in range(period)],
+        'g_load':g_demand,
+        'water_load':water_load,
+        'total_g_load':[g_demand[i]+water_load[i] for i in range(period)],
         'g_fc':[g_fc[i].X for i in range(period)],
         'g_hp':[g_hp[i].X for i in range(period)],
         'g_ghp':[g_ghp[i].X for i in range(period)],
         'z_ghpg':[z_ghpg[i].X for i in range(period)],
         # 'g_ht':[g_ht[i].X for i in range(period)],
 
+
+        'q_load':q_demand,
+        "q_us":[q_us[i].X for i in range(period)],
+        'q_slack':[q_slack[i].X for i in range(period)],
         'q_hp':[q_hp[i].X for i in range(period)],
         # 'q_ct':[q_ct[i].X for i in range(period)],
         'q_ghp':[q_ghp[i].X for i in range(period)],
@@ -502,82 +519,77 @@ def opt():
 
     } 
      #gp.quicksum([gp.quicksum(q_us[s]) for s in range(scenario)])*lambda_q + gp.quicksum([gp.quicksum(p_us[s]) for s in range(scenario)])*lambda_p + gp.quicksum([gp.quicksum(g_us[s]) for s in range(scenario)])*lambda_g
-    ans_ave = {
-            "penalty_g":sum([p_us[0][i].X for i in range(period)])*lambda_p,
+    # ans_ave = {
+    #         "penalty_g":sum([p_us[0][i].X for i in range(period)])*lambda_p,
 
-            "cer":1-sum([p_pur[i].X for i in range(period)])/(sum(ele_load[0])+sum(q_demand[0])/5+sum(g_demand[0])/0.9+sum(water_load[0])/0.9),
+    #         "cer":1-sum([p_pur[i].X for i in range(period)])/(sum(ele_load[0])+sum(q_demand[0])/5+sum(g_demand[0])/0.9+sum(water_load[0])/0.9),
 
-            # 'p_pv':[p_pv[i].x for i in range(period)],
-            # 'p_load':ele_load,
-            'c_dt':[c_dt[0][i].X for i in range(period)],
-            'it_dt_n':[it_dt_n[0][i].X for i in range(period)],
-            'it_load':[it_load[0][i].X for i in range(period)],
+    #         # 'p_pv':[p_pv[i].x for i in range(period)],
+    #         # 'p_load':ele_load,
+    #         'c_dt':[c_dt[0][i].X for i in range(period)],
+    #         'it_dt_n':[it_dt_n[0][i].X for i in range(period)],
+    #         'it_load':[it_load[0][i].X for i in range(period)],
             
-            'p_pv':[p_pv[0][i].X for i in range(period)],
-            'g_load':g_demand[0],
-            'water_load':water_load[0],
-            'total_g_load':[g_demand[0][i]+water_load[0][i] for i in range(period)],
+    #         'p_pv':[p_pv[0][i].X for i in range(period)],
+    #         'g_load':g_demand[0],
+    #         'water_load':water_load[0],
+    #         'total_g_load':[g_demand[0][i]+water_load[0][i] for i in range(period)],
 
-            'g_slack':[g_slack[0][i].X for i in range(period)],
-            'q_slack':[q_slack[0][i].X for i in range(period)],
-            'p_slack':[p_slack[0][i].X for i in range(period)],
-            "p_us":[p_us[0][i].X for i in range(period)],
-            "q_us":[q_us[0][i].X for i in range(period)],
-            "g_us":[g_us[0][i].X for i in range(period)],
-            'q_load':q_demand[0],
-        }
+    #         'g_slack':[g_slack[0][i].X for i in range(period)],
+    #         'q_slack':[q_slack[0][i].X for i in range(period)],
+    #         'p_slack':[p_slack[0][i].X for i in range(period)],
+    #         "p_us":[p_us[0][i].X for i in range(period)],
+    #         "q_us":[q_us[0][i].X for i in range(period)],
+    #         "g_us":[g_us[0][i].X for i in range(period)],
+    #         'q_load':q_demand[0],
+    #     }
 
 
-    ans_max = {'objective':m.objVal,
-            "cer":1-sum([p_pur[i].X for i in range(period)])/(sum(ele_load[1])+sum(q_demand[1])/5+sum(g_demand[1])/0.9+sum(water_load[1])/0.9),
-            # 'p_pv':[p_pv[i].x for i in range(period)],
-            # 'p_load':ele_load,
-            'c_dt':[c_dt[1][i].X for i in range(period)],
-            'it_dt_n':[it_dt_n[1][i].X for i in range(period)],
-            'it_load':[it_load[1][i].X for i in range(period)],
+    # ans_max = {'objective':m.objVal,
+    #         "cer":1-sum([p_pur[i].X for i in range(period)])/(sum(ele_load[1])+sum(q_demand[1])/5+sum(g_demand[1])/0.9+sum(water_load[1])/0.9),
+    #         # 'p_pv':[p_pv[i].x for i in range(period)],
+    #         # 'p_load':ele_load,
+    #         'c_dt':[c_dt[1][i].X for i in range(period)],
+    #         'it_dt_n':[it_dt_n[1][i].X for i in range(period)],
+    #         'it_load':[it_load[1][i].X for i in range(period)],
             
-            'p_pv':[p_pv[1][i].X for i in range(period)],
-            'g_load':g_demand[1],
-            'water_load':water_load[1],
-            'total_g_load':[g_demand[1][i]+water_load[1][i] for i in range(period)],
+    #         'p_pv':[p_pv[1][i].X for i in range(period)],
+    #         'g_load':g_demand[1],
+    #         'water_load':water_load[1],
+    #         'total_g_load':[g_demand[1][i]+water_load[1][i] for i in range(period)],
 
-            'g_slack':[g_slack[1][i].X for i in range(period)],
-            'q_slack':[q_slack[1][i].X for i in range(period)],
-            'p_slack':[p_slack[1][i].X for i in range(period)],
-            "p_us":[p_us[1][i].X for i in range(period)],
-            "q_us":[q_us[1][i].X for i in range(period)],
-            "g_us":[g_us[1][i].X for i in range(period)],
-            'q_load':q_demand[1],
-            }
-    ans_min = {'objective':m.objVal,
-            "cer":1-sum([p_pur[i].X for i in range(period)])/(sum(ele_load[2])+sum(q_demand[2])/5+sum(g_demand[2])/0.9+sum(water_load[2])/0.9),
-            # 'p_pv':[p_pv[i].x for i in range(period)],
-            # 'p_load':ele_load,
-            'c_dt':[c_dt[2][i].X for i in range(period)],
-            'it_dt_n':[it_dt_n[2][i].X for i in range(period)],
-            'it_load':[it_load[2][i].X for i in range(period)],
+    #         'g_slack':[g_slack[1][i].X for i in range(period)],
+    #         'q_slack':[q_slack[1][i].X for i in range(period)],
+    #         'p_slack':[p_slack[1][i].X for i in range(period)],
+    #         "p_us":[p_us[1][i].X for i in range(period)],
+    #         "q_us":[q_us[1][i].X for i in range(period)],
+    #         "g_us":[g_us[1][i].X for i in range(period)],
+    #         'q_load':q_demand[1],
+    #         }
+    # ans_min = {'objective':m.objVal,
+    #         "cer":1-sum([p_pur[i].X for i in range(period)])/(sum(ele_load[2])+sum(q_demand[2])/5+sum(g_demand[2])/0.9+sum(water_load[2])/0.9),
+    #         # 'p_pv':[p_pv[i].x for i in range(period)],
+    #         # 'p_load':ele_load,
+    #         'c_dt':[c_dt[2][i].X for i in range(period)],
+    #         'it_dt_n':[it_dt_n[2][i].X for i in range(period)],
+    #         'it_load':[it_load[2][i].X for i in range(period)],
             
-            'p_pv':[p_pv[2][i].X for i in range(period)],
-            'g_load':g_demand[2],
-            'water_load':water_load[2],
-            'total_g_load':[g_demand[2][i]+water_load[2][i] for i in range(period)],
+    #         'p_pv':[p_pv[2][i].X for i in range(period)],
+    #         'g_load':g_demand[2],
+    #         'water_load':water_load[2],
+    #         'total_g_load':[g_demand[2][i]+water_load[2][i] for i in range(period)],
 
-            'g_slack':[g_slack[2][i].X for i in range(period)],
-            'q_slack':[q_slack[2][i].X for i in range(period)],
-            'p_slack':[p_slack[2][i].X for i in range(period)],
-            "p_us":[p_us[2][i].X for i in range(period)],
-            "q_us":[q_us[2][i].X for i in range(period)],
-            "g_us":[g_us[2][i].X for i in range(period)],
-            'q_load':q_demand[2],
-            }
-    print("p_us:")
-    print(sum(ans_ave["p_us"]),sum(ans_max["p_us"]),sum(ans_min["p_us"]))
-    print("q_us:")
-    print(sum(ans_ave["q_us"]),sum(ans_max["q_us"]),sum(ans_min["q_us"]))
-    print("g_us:")
-    print(sum(ans_ave["g_us"]),sum(ans_max["g_us"]),sum(ans_min["g_us"]))
+    #         'g_slack':[g_slack[2][i].X for i in range(period)],
+    #         'q_slack':[q_slack[2][i].X for i in range(period)],
+    #         'p_slack':[p_slack[2][i].X for i in range(period)],
+    #         "p_us":[p_us[2][i].X for i in range(period)],
+    #         "q_us":[q_us[2][i].X for i in range(period)],
+    #         "g_us":[g_us[2][i].X for i in range(period)],
+    #         'q_load':q_demand[2],
+    #         }
+    print("us:")
+    print(sum(energy_device_res['p_us']),sum(energy_device_res['q_us']),sum(energy_device_res['g_us']))
     print("opex:")
     print(opex.x)
-    print("cer:")
-    print(ans_ave["cer"],ans_max["cer"],ans_min["cer"])
-    return energy_device_res,[ans_ave,ans_max,ans_min]
+
+    return energy_device_res
