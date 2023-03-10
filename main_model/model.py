@@ -407,7 +407,7 @@ def opt():
 
             m.addConstr(p_pv[s][i]==k_pv*area_pv*r[s][i])
 
-            m.addConstr(p_el[i] + p_sol[i] + p_pump[i] + ele_load[i] + p_ghp[i] + p_hp[i] + p_slack[i] == p_us[i] + p_pur[i] + p_fc[i] + p_pv[i])
+            m.addConstr(p_el[i] + p_sol[i] + p_pump[i] + ele_load[s][i] + p_ghp[i] + p_hp[i] + p_slack[s][i] == p_us[s][i] + p_pur[i] + p_fc[i] + p_pv[s][i])
             m.addConstr(g_demand[i]+water_load[i] + g_slack[i] == g_us[i] + c_kWh *m_g_mp[i]*(t_g_mp[i] - t_g_mp_r[i]))
             m.addConstr( g_hp[i] + g_fc[i] + g_ghp[i] + g_us[i] == g_demand[i] + water_load[i]+ g_slack[i])
             m.addConstr(q_demand[i] + q_slack[i] == q_us[i] + c_kWh *m_q_mp[i]*(t_q_mp_r[i] - t_q_mp[i]))
