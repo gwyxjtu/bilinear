@@ -2,7 +2,7 @@
 Author: guo_idpc
 Date: 2023-03-11 00:30:10
 LastEditors: guo_idpc 867718012@qq.com
-LastEditTime: 2023-03-11 01:05:39
+LastEditTime: 2023-03-11 01:30:28
 FilePath: /bilinear/main_model/model.py
 Description: 人一生会遇到约2920万人,两个人相爱的概率是0.000049,所以你不爱我,我不怪你.
 
@@ -61,16 +61,19 @@ from main_model.method import piece_McCormick
 from main_model.model_load import *
 from main_model.stohcastic_load import *
 
-def opt():
+def opt(fix_mode,distribute,penalty):
     '''
     description: 优化主函数，构造物理模型
     fix : 2则是直接双线性求解
     return {*}
     '''
 
-    fix_mode = 0 #0是bilinear，1 是fix 总管t，2是fix 设备温度，3是固定流量。
-    distribute = [0.8,0.1,0.1]
-    # distribute = [1,0,0]
+    # fix_mode = 0 #0是bilinear，1 是fix 总管t，2是fix 设备温度，3是固定流量。
+    # distribute = [0.8,0.1,0.1]
+    # # distribute = [1,0,0]
+    # penalty = 3000
+
+
 
     # 系数
     k_fc = 18
@@ -181,10 +184,9 @@ def opt():
     c_dt_max = 6
     
 
-
-    lambda_q = 30000
-    lambda_g = 30000
-    lambda_p = 30000
+    lambda_q = penalty
+    lambda_g = penalty
+    lambda_p = penalty
     [g_demand,q_demand,r,water_load] = dict_load['average']
     # ele_load = [3100 for _ in range(len(g_demand))]
 
@@ -451,9 +453,13 @@ def opt():
     # q_ct = [-c_kWh*m_ct*(t_ct[i+1].X-t_ct[i].X) for i in range(period-1)]
     # q_ct.append(-c_kWh*m_ct*(t_ct[0].X-t_ct[-1].X))
     ele_load = [[ele_load[s][i].X for s in range(scenario)] for i in range(period)]
-
+    obj_penalty_plot = opex.x + 0.01*penalty*sum([sum([q_us[s][i].x + p_us[s][i].x + g_us[s][i].x for i in range(period)]) for s in range(scenario)])#sum([sum(q_us[s])*distribute[s] for s in range(scenario)])*lambda_q 
+    obj_common_plot = opex.x + 0.01*penalty*sum([q_us[0][i].x + p_us[0][i].x + g_us[0][i].x for i in range(period)])
+    print(obj_penalty_plot)
     energy_device_res = {
         'objective':m.objVal,
+        "obj_penalty_plot":obj_penalty_plot,
+        "obj_common_plot":obj_common_plot,
         "opex":opex.x,
         'p_el':[p_el[i].X for i in range(period)],
         'p_fc':[p_fc[i].X for i in range(period)],

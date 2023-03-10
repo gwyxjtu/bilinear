@@ -2,8 +2,8 @@
 Author: guo_idpc
 Date: 2023-02-23 17:19:03
 LastEditors: guo_idpc 867718012@qq.com
-LastEditTime: 2023-03-11 01:15:08
-FilePath: /bilinear/main_blp.py
+LastEditTime: 2023-03-11 01:42:27
+FilePath: /bilinear/main_blp_penality_plot.py
 Description: 人一生会遇到约2920万人,两个人相爱的概率是0.000049,所以你不爱我,我不怪你.
 
 Copyright (c) 2023 by ${git_name_email}, All Rights Reserved. 
@@ -86,8 +86,22 @@ if __name__ == '__main__':
     period = len(g_demand)
 
     start =time.time()
-    res,dict_sto = opt()
-   
+
+    distribute = [0.8,0.1,0.1]
+    fix_mode,penalty = [0,1,2,3],[3000,6000,9000,12000,15000,18000,21000,24000,27000,30000]
+    # res,dict_sto = opt(0,distribute,3000)
+    mode_common = [[0 for _ in range(len(penalty))] for i in range(len(fix_mode))]
+    mode_inferior = [[0 for _ in range(len(penalty))] for i in range(len(fix_mode))]
+    for i in fix_mode:
+        for j,p in enumerate(penalty):
+            res,dict_sto = opt(i,distribute,p)
+            mode_inferior[i][j] = res['obj_penalty_plot']
+            mode_common[i][j] = res['obj_common_plot']
+            pd.DataFrame(mode_common).to_csv("res_for_test/mode_common.csv")
+            pd.DataFrame(mode_inferior).to_csv("res_for_test/mode_inferior.csv")
+
+        send('模式'+str(i)+'计算完毕',receivers,"mode_res",["res_for_test/mode_common.csv","res_for_test/mode_inferior.csv"])
+            # exit(0)
 
     print(res['objective'])
 
