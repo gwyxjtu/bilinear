@@ -2,7 +2,7 @@
 Author: guo_idpc
 Date: 2023-03-11 00:30:10
 LastEditors: guo_idpc 867718012@qq.com
-LastEditTime: 2023-03-11 01:30:28
+LastEditTime: 2023-03-11 11:09:30
 FilePath: /bilinear/main_model/model.py
 Description: 人一生会遇到约2920万人,两个人相爱的概率是0.000049,所以你不爱我,我不怪你.
 
@@ -122,8 +122,8 @@ def opt(fix_mode,distribute,penalty):
         t_g_hp_max = 60
         t_g_ghp_min = 35
         t_g_ghp_max = 55
-        t_g_mp_min = 50
-        t_g_mp_max = 50
+        t_g_mp_min = 45
+        t_g_mp_max = 45
         t_g_mp_r_min = 30
         t_g_mp_r_max = 35
 
@@ -137,14 +137,14 @@ def opt(fix_mode,distribute,penalty):
         t_q_mp_r_min = 15
         t_q_mp_r_max = 30
 
-    if fix_mode == 2:#总管
+    if fix_mode == 2:#devices
         t_fc_min = 60
         t_fc_max = 60
-        t_g_hp_min = 55
-        t_g_hp_max = 55
-        t_g_ghp_min = 50
-        t_g_ghp_max = 50
-        t_g_mp_min = 45
+        t_g_hp_min = 45
+        t_g_hp_max = 45
+        t_g_ghp_min = 40
+        t_g_ghp_max = 40
+        t_g_mp_min = 50
         t_g_mp_max = 60
         t_g_mp_r_min = 30
         t_g_mp_r_max = 45
@@ -594,4 +594,7 @@ def opt(fix_mode,distribute,penalty):
     print(opex.x)
     print("cer:")
     print(ans_ave["cer"],ans_max["cer"],ans_min["cer"])
+
+    print("common:")
+    print(energy_device_res['obj_penalty_plot'],energy_device_res['obj_common_plot'])
     return energy_device_res,[ans_ave,ans_max,ans_min]
