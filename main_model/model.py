@@ -98,14 +98,14 @@ def opt():
     t_g_mp_r_max = 45
 
 
-    t_q_hp_min = 5
+    t_q_hp_min = 7
     t_q_hp_max = 20
     t_q_ghp_min = 5
     t_q_ghp_max = 20
     t_q_mp_min = 5
     t_q_mp_max = 10
     t_q_mp_r_min = 15
-    t_q_mp_r_max = 30
+    t_q_mp_r_max = 16
 
     m_g_pipe_max = 100000
     m_q_pipe_max = 300000
