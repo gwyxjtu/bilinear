@@ -2,7 +2,7 @@
 Author: guo_idpc
 Date: 2023-02-23 19:15:43
 LastEditors: guo_idpc 867718012@qq.com
-LastEditTime: 2023-03-11 00:29:03
+LastEditTime: 2023-03-13 16:22:51
 FilePath: /bilinear/main_model/model.py
 Description: 人一生会遇到约2920万人,两个人相爱的概率是0.000049,所以你不爱我,我不怪你.
 
@@ -391,6 +391,12 @@ def opt():
         m.addConstr(m_q_mp[i]*t_q_mp[i] == m_q_hp[i]*t_q_hp[i] + m_q_ghp[i]*t_q_ghp[i] )
         m.addConstr(m_g_mp[i] == m_g_hp[i] + m_g_ghp[i] + m_fc[i] )
         m.addConstr(m_q_mp[i] == m_q_hp[i] + m_q_ghp[i] )
+        m.addConstr(m_g_hp[i] <= g_hp[i])
+        m.addConstr(m_g_ghp[i] <= 1000000*g_ghp[i])
+        m.addConstr(m_q_hp[i] <= 1000000*q_hp[i])
+        m.addConstr(m_q_ghp[i] <= 1000000*q_ghp[i])
+        m.addConstr(m_fc[i] <= 1000000*g_fc[i])
+
 
     for i in range(period-1):
         m.addConstr(c_dt[i+1] == c_dt[i] + it_dt[i] - it_dt_n[i+1])
