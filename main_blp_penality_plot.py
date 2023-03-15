@@ -2,7 +2,7 @@
 Author: guo_idpc
 Date: 2023-02-23 17:19:03
 LastEditors: guo_idpc 867718012@qq.com
-LastEditTime: 2023-03-11 11:08:05
+LastEditTime: 2023-03-13 21:52:21
 FilePath: /bilinear/main_blp_penality_plot.py
 Description: 人一生会遇到约2920万人,两个人相爱的概率是0.000049,所以你不爱我,我不怪你.
 
@@ -88,7 +88,7 @@ if __name__ == '__main__':
     start =time.time()
 
     distribute = [0.8,0.1,0.1]
-    fix_mode,penalty = [0,1,2,3],[3000,6000,9000,12000,15000,18000,21000,24000,27000,30000]
+    fix_mode,penalty = [0],[300,600,900,1200,1500,1800,2100,2400,2700,3000]
     # res,dict_sto = opt(0,distribute,3000)
     mode_common = [[0 for _ in range(len(penalty))] for i in range(len(fix_mode))]
     mode_inferior = [[0 for _ in range(len(penalty))] for i in range(len(fix_mode))]

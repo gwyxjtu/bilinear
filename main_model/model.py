@@ -2,7 +2,7 @@
 Author: guo_idpc
 Date: 2023-03-11 00:30:10
 LastEditors: guo_idpc 867718012@qq.com
-LastEditTime: 2023-03-11 11:09:30
+LastEditTime: 2023-03-13 21:21:49
 FilePath: /bilinear/main_model/model.py
 Description: 人一生会遇到约2920万人,两个人相爱的概率是0.000049,所以你不爱我,我不怪你.
 
@@ -297,11 +297,11 @@ def opt(fix_mode,distribute,penalty):
     # m.addConstr(h_sto[-1] == h_sto[0])
 
     if fix_mode == 3:
-        m.addConstrs(m_fc[i] == 20000 for i in range(period))
-        m.addConstrs(m_g_hp[i] == 20000 for i in range(period))
-        m.addConstrs(m_q_hp[i] == 20000 for i in range(period))
-        m.addConstrs(m_g_ghp[i] == 20000 for i in range(period))
-        m.addConstrs(m_q_ghp[i] == 20000 for i in range(period))
+        m.addConstrs(m_fc[i] == 40000 for i in range(period))
+        m.addConstrs(m_g_hp[i] == 40000 for i in range(period))
+        m.addConstrs(m_q_hp[i] == 40000 for i in range(period))
+        m.addConstrs(m_g_ghp[i] == 40000 for i in range(period))
+        m.addConstrs(m_q_ghp[i] == 40000 for i in range(period))
 
 
     for i in range(period - 1):
@@ -453,8 +453,8 @@ def opt(fix_mode,distribute,penalty):
     # q_ct = [-c_kWh*m_ct*(t_ct[i+1].X-t_ct[i].X) for i in range(period-1)]
     # q_ct.append(-c_kWh*m_ct*(t_ct[0].X-t_ct[-1].X))
     ele_load = [[ele_load[s][i].X for s in range(scenario)] for i in range(period)]
-    obj_penalty_plot = opex.x + 0.01*penalty*sum([sum([q_us[s][i].x + p_us[s][i].x + g_us[s][i].x for i in range(period)]) for s in range(scenario)])#sum([sum(q_us[s])*distribute[s] for s in range(scenario)])*lambda_q 
-    obj_common_plot = opex.x + 0.01*penalty*sum([q_us[0][i].x + p_us[0][i].x + g_us[0][i].x for i in range(period)])
+    obj_penalty_plot = opex.x + penalty*sum([q_us[2][i].x + p_us[2][i].x + g_us[2][i].x for i in range(period)])#sum([sum(q_us[s])*distribute[s] for s in range(scenario)])*lambda_q 
+    obj_common_plot = opex.x + penalty*sum([q_us[0][i].x + p_us[0][i].x + g_us[0][i].x for i in range(period)])
     print(obj_penalty_plot)
     energy_device_res = {
         'objective':m.objVal,
